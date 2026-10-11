@@ -1,0 +1,34 @@
+{
+  "name": "opencode-pita-plugin",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "OpenCode plugin 'pita'",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tui": "./src/tui.tsx",
+    "./utils": "./src/utils.ts",
+    "./cli": "./src/cli.ts"
+  },
+  "bin": {
+    "pita": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@opencode/plugin": "latest"
+  },
+  "scripts": {
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest ui",
+    "cli": "node src/cli.ts"
+  },
+  "peerDependencies": {
+    "@opentui/core": ">=0.5.8",
+    "@opentui/solid": ">=0.5.8",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "vitest": "^5.0.3",
+    "tsx": "^4.0.0"
+  }
+}
