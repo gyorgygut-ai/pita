@@ -202,6 +202,13 @@ export const PitaPanel: PitaPanel = (props) => {
         run: back,
       },
     ],
+    bindings: [
+      "pita.segment.next",
+      "pita.segment.previous",
+      "pita.segment.toggle",
+      "pita.accept",
+      "pita.back",
+    ],
   }))
 
   const load = async (): Promise<void> => {
@@ -263,11 +270,13 @@ export default Plugin.define({
           title: "Pita: reply to segments",
           description: "Select segments of the last assistant message and compose a reply",
           bind: "<leader>p",
+          palette: true,
           run: () => {
             context.ui.panel.open(pitaPanelName, { presentation: "fullscreen" })
           },
         },
       ],
+      bindings: ["pita.open"],
     }))
 
     return unregister
