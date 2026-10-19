@@ -1,4 +1,4 @@
-import type { StrategyName } from "./strategies"
+import type { StrategyName } from "./strategies/index.js"
 
 export type PitaOptions = {
   readonly strategy: StrategyName

@@ -4,7 +4,28 @@
 
 ---
 
-## Process
+## RULES
+
+**Activate Skills**:
+
+- [`test-driven-development`](.opencode/skills/test-driven-development/SKILL.md)
+- [`verification-before-completion`](.opencode/skills/verification-before-completion/SKILL.md)
+
+**Non-negotiables**:
+
+- **No guessing**: Verify OpenCode APIs against official docs and source
+- **No hand-rolling**: Use native OpenCode capabilities, minimal elegant code
+- **$ = P = f(test+code)**: Always show proof; automated, deterministic + E2E execution
+
+**Specs = Authoritative**:
+
+- **Problem**: I want spec adherence across the codebase
+- **Approach**: Code matched to specs, always; NOT specs to code
+- **Outcome**: Code fulfilling acceptance criteria; WITHOUT exception
+
+---
+
+## SPECS
 
 **1. Plugin Trigger**:
 
@@ -12,7 +33,6 @@
 - **Approach**: A keyboard shortcut triggers the plugin segment selection state 
 - **Outcome**: The last assistant message is displayed in a full screen TUI route
 - **Acceptance**:
-
   - Shortcut key configurable in settings
   - Assistant message formatting unchanged
 
@@ -22,7 +42,6 @@
 - **Approach**: Strategy pattern, each mapping message to [{startIndex, endIndex}]
 - **Outcome**: The message can be navigated to toggle segments as selected
 - **Acceptance**:
-
   - Strategy to use configurable in settings
   - Assistant message formatting unchanged
   - `Highlighted`: Opencode theme `accent` bg + fitting color
@@ -48,7 +67,6 @@
 
 - **Tool**: `src/strategies/llm-apfel.ts`
 - **Acceptance**:
-
   - Input: message as string
   - Request segmenting decision from LLM 
   - Map LLM decision to output segment list
@@ -60,41 +78,57 @@
 - **Approach**: The selected segments appear pre-filled in an editor
 - **Outcome**: The response to the segments can be freely edited
 - **Acceptance**:
-
   - Segments use same `Selected` style, but in quotation marks
   - There are two blank lines between each displayed segment
   - The entire content is editable, including the segments
   - `Esc` key closes reply composition; goes back to selection
   - `Enter` key submits the composition; copies response to chat box
 
-**Verification**:
+---
 
-- **Problem**: I want deterministic quality assurance
-- **Tool**: `tests/unit/*.test.ts`, `tests/acceptance/*.test.ts`
-- **Acceptance**:
+## Manual Testing
 
-  - Simple tests; input from fixtures; one assert on output
-  - Test invalid, none, 0-input, simple, complex inputs
-  - Avoid mocking, hacking or any magic; use DI patterns
+**In OpenCode CLI**:
+
+- **Problem**: I want to manual test in OpenCode
+- **Approach**:
+  - `npm run build`: builds `./src` into `./dist`
+  - `bundle:local`: installs local copy of `./dist`
+  - `bundle:global`: installs global copy of `./dist`
+  - `watch:local`: installs local copy on `./src` change
+  - `watch:global`: installs global copy on `./src` change
+- **Outcome**: 
+  - Local install overwritten at `./opencode/plugins/pita`
+  - Global install overwritten at `~/.config/opencode/plugins/pita`
+
+**In Standalone TUI**:
+
+- **Problem**: I want to manual test outside OpenCode
+- **Approach**:
+  - `npm run build`: builds `./src` into `./dist`
+  - `bundle:tui`: serves `./dist` in a standalone tui
+  - Code must be decoupled from OpenCode apis; use DI
+- **Outcome**: 
+  - `Segment Selection` displayed with a `fixture message`
+  - Identical behaviour: submit displays `Reply Composition`
+  - Code kept identical, only difference is `TUI<->plugin` glue
 
 ---
 
-# Non-negotiables
+## Verification
 
-**Correct**:
+**Non-negotiable**:
 
-- **Goal**: Spec adherence across the codebase without gaps
-- **Approach**: Code matched to authoritive specs; NOT specs to code
-- **Outcome**: Code fulfilling acceptance criteria as specs dictate
+- **Proof**: the verification chain must prove all changes
+- **Progress**: tier-by-tier; until all passed or failure
+- **Failures**: report; investigate; fix; restart verification
+- **Tidiness**: at most 6 lines per test: `setup` \n `act` \n `assert`
 
-**Clean**:
+**Gated Tiers**:
 
-- **Goal**: Clean, elegant, test-first codebase without dead code
-- **Approach**: Use DI. No comments, dead code. Let TS infer types
-- **Outcome**: Simple code fulfilling requirements, without drift
-
-**Opencode**:
-
-- **Goal**: Idiomatic NX patterns instead of hand-rolling and guesses
-- **Approach**: Use the `edit-opencode` skill to used verified patterns
-- **Outcome**: Minimal code fulfilling all requirements, without drift
+- **🧐 Tier 1**: `lint`
+- **📦 Tier 2**: `build`
+- **🏡 Tier 3**: `test:unit`
+- **🏰 Tier 4**: `test:acceptance`
+- **🏟️ Tier 5**: `test:e2e`
+- **💪🏾 `verify`**: `t1` && `t2` && `t3` && `t4` && `t5`

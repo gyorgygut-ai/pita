@@ -1,5 +1,5 @@
-import type { Segment } from "../segment"
-import type { Strategy } from "./index"
+import type { Segment } from "../segment.js"
+import type { Strategy } from "./index.js"
 
 const sentencePattern = /[^.!?…\n]+[.!?…]*/g
 

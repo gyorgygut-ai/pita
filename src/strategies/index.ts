@@ -1,6 +1,6 @@
-import type { Segment } from "../segment"
-import { apfelStrategy, type ApfelRunner } from "./llm-apfel"
-import { sentenceStrategy } from "./sentence"
+import type { Segment } from "../segment.js"
+import { apfelStrategy, type ApfelRunner } from "./llm-apfel.js"
+import { sentenceStrategy } from "./sentence.js"
 
 export type StrategyName = "sentence" | "apfel"
 

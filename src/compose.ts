@@ -1,4 +1,4 @@
-import type { Segment } from "./segment"
+import type { Segment } from "./segment.js"
 
 export type ComposeReply = (
   message: string,

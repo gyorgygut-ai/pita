@@ -37,6 +37,7 @@
     "**/fixtures/**",
     "**/*.bundle.js",
     "**/coverage",
-    "**/.turbo"
+    "**/.turbo",
+    ".agents"
   ]
 }
