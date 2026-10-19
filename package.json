@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "description": "OpenCode plugin 'pita'",
   "exports": {
-    ".": "./src/index.ts",
     "./tui": "./src/tui.tsx"
   },
   "dependencies": {
@@ -14,8 +13,7 @@
     "lint": "oxlint",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:ui": "vitest ui",
-    "cli": "node src/cli.ts"
+    "test:ui": "vitest ui"
   },
   "peerDependencies": {
     "@opentui/core": ">=0.5.8",

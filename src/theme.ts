@@ -16,6 +16,13 @@ export type PitaTheme = {
 
 export type ResolvePitaTheme = (theme: ResolvedTheme, mode: "dark" | "light") => PitaTheme
 
-export const pitaTheme: ResolvePitaTheme = () => {
-  throw new Error("not implemented")
-}
+const onHighlight = (theme: ResolvedTheme, mode: "dark" | "light"): RGBA =>
+  mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900]
+
+export const pitaTheme: ResolvePitaTheme = (theme, mode) => ({
+  highlighted: { background: theme.hue.accent[400], foreground: onHighlight(theme, mode) },
+  selected: { background: theme.hue.interactive[500], foreground: onHighlight(theme, mode) },
+  text: theme.text.base,
+  muted: theme.text.muted,
+  border: theme.border.base,
+})

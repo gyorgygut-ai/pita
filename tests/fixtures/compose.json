@@ -1,0 +1,10 @@
+{
+  "message": "One. Two. Three.",
+  "segments": [
+    { "start": 0, "end": 4 },
+    { "start": 5, "end": 9 },
+    { "start": 10, "end": 16 }
+  ],
+  "selected": [0, 2],
+  "expected": "\"One.\"\n\n\n\"Three.\""
+}

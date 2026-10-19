@@ -1,8 +1,10 @@
-import { Plugin } from "@opencode/plugin/tui"
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
+import type { ApfelRunner } from "./strategies/llm-apfel"
 
-export default Plugin.define({
-  id: "pita",
-  setup: () => {
-    throw new Error("not implemented")
-  },
-})
+const exec = promisify(execFile)
+
+export const apfel: ApfelRunner = async (prompt) => {
+  const result = await exec("apfel", ["-o", "json", prompt])
+  return result.stdout
+}

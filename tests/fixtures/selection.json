@@ -1,0 +1,18 @@
+{
+  "next": [
+    { "current": -1, "count": 3, "expected": 0 },
+    { "current": 2, "count": 3, "expected": 0 },
+    { "current": -1, "count": 0, "expected": -1 }
+  ],
+  "prev": [
+    { "current": -1, "count": 3, "expected": 2 },
+    { "current": 0, "count": 3, "expected": 2 },
+    { "current": 1, "count": 3, "expected": 0 },
+    { "current": -1, "count": 0, "expected": -1 }
+  ],
+  "toggle": [
+    { "selected": [], "index": 1, "expected": [1] },
+    { "selected": [1], "index": 1, "expected": [] },
+    { "selected": [2], "index": 0, "expected": [0, 2] }
+  ]
+}
