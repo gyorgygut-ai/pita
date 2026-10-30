@@ -44,8 +44,8 @@
 - **Acceptance**:
   - Strategy to use configurable in settings
   - Assistant message formatting unchanged
-  - `Highlighted`: Opencode theme `accent` bg + fitting color
-  - `Selected`: Opencode theme `primary` bg + fitting color
+  - `Highlighted`: Opencode theme `accent` bg - `theme.hue.accent[200]` + fitting color
+  - `Selected`: Opencode theme `primary` bg - `theme.hue.interactive[200]` + fitting color
   - `Up` key highlights the previous / last segment
   - `Down` key highlights the next / first segment
   - `Space` key adds current highlighted segments to selected list
@@ -106,12 +106,25 @@
 - **Problem**: I want to manual test outside OpenCode
 - **Approach**:
   - `npm run build`: builds `./src` into `./dist`
-  - `bundle:tui`: serves `./dist` in a standalone tui
+  - `bundle:standalone`: serves `./dist` in a standalone tui
+  - `watch:standalone`: serves `./dist` in a standalone tui
   - Code must be decoupled from OpenCode apis; use DI
+- **Runtime**:
+  - Node 26.4 via `.nvmrc` + `devEngines` enforcement
+  - `--experimental-ffi --conditions=browser`
+  - No Bun dependency
+  - `babel` compiles `./src` into `./dist`; `tsx` is not used
 - **Outcome**: 
   - `Segment Selection` displayed with a `fixture message`
   - Identical behaviour: submit displays `Reply Composition`
   - Code kept identical, only difference is `TUI<->plugin` glue
+- **Acceptenance**:
+  - Identical code rendered in `opentui`
+  - `bundle:standalone` opens the fixture message on `Segment Selection`
+  - `Enter` on a selection displays `Reply Composition`
+  - `watch:standalone` rebuilds and restarts on `./src` change
+  - Shared modules import no `@opencode/*`: `screens`, `controller`, `compose`, `selection`, `strategies`, `theme`
+  - Host glue limited to `tui.tsx` (plugin) and `standalone.tsx` (TUI)
 
 ---
 
@@ -130,5 +143,6 @@
 - **📦 Tier 2**: `build`
 - **🏡 Tier 3**: `test:unit`
 - **🏰 Tier 4**: `test:acceptance`
-- **🏟️ Tier 5**: `test:e2e`
-- **💪🏾 `verify`**: `t1` && `t2` && `t3` && `t4` && `t5`
+- **💪🏾 `verify`**: `t1` && `t2` && `t3` && `t4`
+
+**Scripts**: `test:unit` → `tests/unit` · `test:acceptance` → `tests/acceptance` · `verify` = `t1 && t2 && t3 && t4`

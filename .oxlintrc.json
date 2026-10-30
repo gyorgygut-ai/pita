@@ -28,6 +28,7 @@
     "stylistic/semi": ["error", "never"]
   },
   "ignorePatterns": [
+    ".opencode",
     "node_modules",
     ".obsidian",
     "dist",

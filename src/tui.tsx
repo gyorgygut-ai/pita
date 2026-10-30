@@ -1,37 +1,20 @@
-import { For, Show, createSignal, onMount } from "solid-js"
-import type { RGBA, TextareaRenderable } from "@opentui/core"
+import { Show, createSignal, onMount } from "solid-js"
+import type { TextareaRenderable } from "@opentui/core"
 import type { JSX } from "@opentui/solid"
 import { Plugin, usePlugin } from "@opencode/plugin/tui"
 import type { PanelInput } from "@opencode/plugin/tui/context"
-import { composeReply } from "./compose.js"
 import { apfel } from "./apfel.js"
+import { createPitaController } from "./controller.js"
+import type { PitaController } from "./controller.js"
 import { parseOptions } from "./options.js"
-import { isSelected, nextIndex, prevIndex, toggleSelected } from "./selection.js"
-import type { Segment } from "./segment.js"
+import { PitaShell } from "./screens.js"
 import { resolveStrategy } from "./strategies/index.js"
 import type { Strategy } from "./strategies/index.js"
-import type { PitaTheme } from "./theme.js"
-import { pitaTheme } from "./theme.js"
+import { opencodePitaTheme } from "./theme-opencode.js"
 
 export const pitaPanelName = "pita.reply"
 
-export type Screen = "select" | "compose"
-
 export type AssistantText = (context: Plugin.Context, sessionID: string) => string
-
-export type SelectScreenProps = {
-  readonly message: () => string
-  readonly segments: () => readonly Segment[]
-  readonly highlight: () => number
-  readonly selected: () => readonly number[]
-  readonly theme: () => PitaTheme
-}
-
-export type ComposeScreenProps = {
-  readonly reply: () => string
-  readonly editor: (node: TextareaRenderable) => void
-  readonly theme: () => PitaTheme
-}
 
 export type PitaPanelProps = {
   readonly panel: PanelInput
@@ -57,113 +40,26 @@ export const lastAssistantText: AssistantText = (context, sessionID) => {
     .join("")
 }
 
-const picked = (props: SelectScreenProps, index: number): boolean =>
-  isSelected(props.selected(), index)
-
-const highlighted = (props: SelectScreenProps, index: number): boolean =>
-  props.highlight() === index
-
-const segmentBackground = (props: SelectScreenProps, index: number): RGBA | undefined => {
-  if (picked(props, index)) {
-    return props.theme().selected.background
-  }
-  if (highlighted(props, index)) {
-    return props.theme().highlighted.background
-  }
-  return undefined
-}
-
-const segmentForeground = (props: SelectScreenProps, index: number): RGBA => {
-  if (picked(props, index)) {
-    return props.theme().selected.foreground
-  }
-  if (highlighted(props, index)) {
-    return props.theme().highlighted.foreground
-  }
-  return props.theme().text
-}
-
-export type SelectScreen = (props: SelectScreenProps) => JSX.Element
-
-export const SelectScreen: SelectScreen = (props) => (
-  <box flexDirection="column">
-    <text fg={props.theme().muted}>
-      Up and Down highlight, Space toggles, Enter composes, Esc closes
-    </text>
-    <For each={props.segments()}>
-      {(segment, index) => (
-        <box backgroundColor={segmentBackground(props, index())}>
-          <text fg={segmentForeground(props, index())}>
-            {props.message().slice(segment.start, segment.end)}
-          </text>
-        </box>
-      )}
-    </For>
-  </box>
-)
-
-export type ComposeScreen = (props: ComposeScreenProps) => JSX.Element
-
-export const ComposeScreen: ComposeScreen = (props) => (
-  <box flexDirection="column">
-    <text fg={props.theme().muted}>Enter sends, Esc returns to the selection</text>
-    <textarea
-      ref={props.editor}
-      focused
-      initialValue={props.reply()}
-      focusedBackgroundColor={props.theme().selected.background}
-      focusedTextColor={props.theme().selected.foreground}
-    />
-  </box>
-)
-
 export type PitaPanel = (props: PitaPanelProps) => JSX.Element
 
 export const PitaPanel: PitaPanel = (props) => {
   const context = usePlugin()
-  const theme = () => pitaTheme(context.theme, context.themeMode)
-  const [message, setMessage] = createSignal("")
-  const [segments, setSegments] = createSignal<readonly Segment[]>([])
-  const [highlight, setHighlight] = createSignal(-1)
-  const [selected, setSelected] = createSignal<readonly number[]>([])
-  const [screen, setScreen] = createSignal<Screen>("select")
-  const [reply, setReply] = createSignal("")
+  const theme = () => opencodePitaTheme(context.theme, context.themeMode)
+  const [controller, setController] = createSignal<PitaController>()
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
 
   const attachEditor = (node: TextareaRenderable) => setEditor(node)
 
-  const close = (): void => props.panel.close()
-
-  const send = async (): Promise<void> => {
-    await context.client.session.prompt({
-      sessionID: props.panel.sessionID,
-      text: editor()?.plainText ?? reply(),
-    })
-    close()
-  }
-
   const accept = (): void => {
-    if (screen() === "select") {
-      setReply(composeReply(message(), segments(), selected()))
-      setScreen("compose")
+    const current = controller()
+    if (current === undefined) {
       return
     }
-    void send()
-  }
-
-  const back = (): void => {
-    if (screen() === "compose") {
-      setScreen("select")
+    if (current.screen() === "select") {
+      current.compose()
       return
     }
-    close()
-  }
-
-  const toggle = (): void => {
-    const index = highlight()
-    if (index >= 0) {
-      setSelected(toggleSelected(selected(), index))
-    }
+    current.submit(editor()?.plainText ?? current.reply())
   }
 
   context.keymap.layer(() => ({
@@ -172,22 +68,22 @@ export const PitaPanel: PitaPanel = (props) => {
         id: "pita.segment.next",
         title: "Pita: highlight next segment",
         bind: "down",
-        enabled: () => screen() === "select",
-        run: () => setHighlight(nextIndex(highlight(), segments().length)),
+        enabled: () => controller()?.screen() === "select",
+        run: () => controller()?.next(),
       },
       {
         id: "pita.segment.previous",
         title: "Pita: highlight previous segment",
         bind: "up",
-        enabled: () => screen() === "select",
-        run: () => setHighlight(prevIndex(highlight(), segments().length)),
+        enabled: () => controller()?.screen() === "select",
+        run: () => controller()?.prev(),
       },
       {
         id: "pita.segment.toggle",
         title: "Pita: toggle highlighted segment",
         bind: "space",
-        enabled: () => screen() === "select",
-        run: toggle,
+        enabled: () => controller()?.screen() === "select",
+        run: () => controller()?.toggle(),
       },
       {
         id: "pita.accept",
@@ -199,7 +95,7 @@ export const PitaPanel: PitaPanel = (props) => {
         id: "pita.back",
         title: "Pita: return or close",
         bind: "escape",
-        run: back,
+        run: () => controller()?.back(),
       },
     ],
     bindings: [
@@ -213,9 +109,16 @@ export const PitaPanel: PitaPanel = (props) => {
 
   const load = async (): Promise<void> => {
     await context.data.session.message.sync(props.panel.sessionID)
-    const text = lastAssistantText(context, props.panel.sessionID)
-    setMessage(text)
-    setSegments(await props.strategy(text))
+    const message = lastAssistantText(context, props.panel.sessionID)
+    setController(
+      createPitaController({
+        message,
+        segments: await props.strategy(message),
+        close: () => props.panel.close(),
+        send: (text) =>
+          context.client.session.prompt({ sessionID: props.panel.sessionID, text }),
+      })
+    )
   }
 
   onMount(() => {
@@ -223,25 +126,9 @@ export const PitaPanel: PitaPanel = (props) => {
   })
 
   return (
-    <box
-      flexDirection="column"
-      padding={1}
-      borderStyle="single"
-      borderColor={theme().border}
-    >
-      <Show
-        when={screen() === "select"}
-        fallback={<ComposeScreen reply={reply} editor={attachEditor} theme={theme} />}
-      >
-        <SelectScreen
-          message={message}
-          segments={segments}
-          highlight={highlight}
-          selected={selected}
-          theme={theme}
-        />
-      </Show>
-    </box>
+    <Show when={controller()}>
+      {(current) => <PitaShell controller={current()} theme={theme} editor={attachEditor} />}
+    </Show>
   )
 }
 

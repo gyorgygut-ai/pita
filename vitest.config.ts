@@ -4,7 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    include: ['tests/**/*.test.ts'],
+    exclude: ['**/node_modules/**', '**/.git/**'],
     coverage: {
       reporter: ['text', 'html'],
       include: ['src/**/*.ts', 'src/**/*.tsx'],

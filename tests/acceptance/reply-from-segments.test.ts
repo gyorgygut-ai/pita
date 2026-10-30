@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest"
 import { composeReply } from "../../src/compose"
 import { nextIndex, prevIndex, toggleSelected } from "../../src/selection"
 import { sentenceStrategy } from "../../src/strategies/sentence"
+import { standaloneMessage } from "../../src/fixtures"
 import { readFixture } from "../read-fixture"
 
-const message = readFixture("acceptance-message.txt")
+const message = standaloneMessage
 
 describe("reply from selected segments", () => {
   it("composes the reply that gets submitted", async () => {

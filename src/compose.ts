@@ -12,3 +12,19 @@ export const composeReply: ComposeReply = (message, segments, selected) => {
   )
   return quoted.join("\n\n\n")
 }
+
+export type QuotedRange = {
+  readonly start: number
+  readonly end: number
+}
+
+export type QuotedRanges = (reply: string) => QuotedRange[]
+
+export const quotedRanges: QuotedRanges = (reply) => {
+  const ranges: QuotedRange[] = []
+  for (const match of reply.matchAll(/"[^"]*"/g)) {
+    const start = match.index ?? 0
+    ranges.push({ start, end: start + match[0].length })
+  }
+  return ranges
+}
