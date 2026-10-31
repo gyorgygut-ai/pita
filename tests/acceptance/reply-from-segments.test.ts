@@ -1,25 +1,29 @@
-import { describe, expect, it } from "vitest"
-import { composeReply } from "../../src/compose"
-import { nextIndex, prevIndex, toggleSelected } from "../../src/selection"
-import { sentenceStrategy } from "../../src/strategies/sentence"
-import { standaloneMessage } from "../../src/fixtures"
-import { readFixture } from "../read-fixture"
+import { describe, it } from "node:test"
+import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
+import { composeReply } from "../../dist/compose.js"
+import { nextIndex, prevIndex, toggleSelected } from "../../dist/selection.js"
+import { sentenceStrategy } from "../../dist/strategies/sentence.js"
+import { standaloneMessage } from "../../dist/fixtures.js"
+
+const readFixture = (name: string): string =>
+  readFileSync(new URL(`../fixtures/${name}`, import.meta.url), "utf8")
 
 const message = standaloneMessage
 
-describe("reply from selected segments", () => {
-  it("composes the reply that gets submitted", async () => {
+await describe("reply from selected segments", async () => {
+  await it("composes the reply that gets submitted", async () => {
     const segments = await sentenceStrategy(message)
     const first = nextIndex(-1, segments.length)
     const last = prevIndex(-1, segments.length)
     const selected = toggleSelected(toggleSelected([], last), first)
-    expect(composeReply(message, segments, selected)).toBe(readFixture("acceptance-expected.txt"))
+    assert.equal(composeReply(message, segments, selected), readFixture("acceptance-expected.txt"))
   })
 
-  it("composes an empty reply after toggling the selected segment off", async () => {
+  await it("composes an empty reply after toggling the selected segment off", async () => {
     const segments = await sentenceStrategy(message)
     const first = nextIndex(-1, segments.length)
     const selected = toggleSelected(toggleSelected([], first), first)
-    expect(composeReply(message, segments, selected)).toBe("")
+    assert.equal(composeReply(message, segments, selected), "")
   })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { createPitaController } from "../../src/controller"
 import type { Segment } from "../../src/segment"
+import type { SubmissionStrategy } from "../../src/strategies/submission"
 
 const message = "One. Two. Three."
 const segments: readonly Segment[] = [
@@ -9,8 +10,8 @@ const segments: readonly Segment[] = [
   { start: 10, end: 16 },
 ]
 
-const build = (close: () => void, send: (text: string) => void) =>
-  createPitaController({ message, segments, close, send })
+const build = (close: () => void, submit: SubmissionStrategy) =>
+  createPitaController({ message, segments, close, submit })
 
 describe("createPitaController", () => {
   it("starts on the selection screen with nothing highlighted", () => {
@@ -46,6 +47,13 @@ describe("createPitaController", () => {
     expect(controller.reply()).toBe('"Three."')
   })
 
+  it("replaces the composed reply", () => {
+    const controller = build(vi.fn(), vi.fn())
+    controller.compose()
+    controller.setReply("edited")
+    expect(controller.reply()).toBe("edited")
+  })
+
   it("returns from composition to the selection", () => {
     const close = vi.fn()
     const controller = build(close, vi.fn())
@@ -62,11 +70,10 @@ describe("createPitaController", () => {
     expect(close).toHaveBeenCalledOnce()
   })
 
-  it("submits the composed text", () => {
-    const send = vi.fn()
-    const controller = build(vi.fn(), send)
-    controller.compose()
+  it("delegates submitted text to its strategy", () => {
+    const submit = vi.fn()
+    const controller = build(vi.fn(), submit)
     controller.submit('"Three."')
-    expect(send).toHaveBeenCalledWith('"Three."')
+    expect(submit).toHaveBeenCalledWith('"Three."')
   })
 })

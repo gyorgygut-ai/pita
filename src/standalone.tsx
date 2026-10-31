@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js"
+import { Show, createSignal } from "solid-js"
 import { RGBA } from "@opentui/core"
 import type { TextareaRenderable } from "@opentui/core"
 import { render, useKeyboard, useRenderer } from "@opentui/solid"
@@ -6,13 +6,13 @@ import type { JSX } from "@opentui/solid"
 import { pathToFileURL } from "node:url"
 import { createPitaController } from "./controller.js"
 import { standaloneMessage } from "./fixtures.js"
-import { PitaShell } from "./screens.js"
+import { PitaFrame, PitaShell, ReplyResultScreen } from "./screens.js"
 import type { Segment } from "./segment.js"
 import { sentenceStrategy } from "./strategies/sentence.js"
 import { pitaTheme } from "./theme.js"
 import type { PitaPalette } from "./theme.js"
 
-const palette: PitaPalette = {
+export const standalonePalette: PitaPalette = {
   accent: RGBA.fromInts(59, 130, 246),
   primary: RGBA.fromInts(37, 99, 235),
   onAccent: RGBA.fromInts(11, 11, 11),
@@ -25,7 +25,6 @@ const palette: PitaPalette = {
 export type StandaloneAppProps = {
   readonly message: string
   readonly segments: readonly Segment[]
-  readonly onSend?: (text: string) => void
   readonly onClose?: () => void
 }
 
@@ -34,6 +33,7 @@ export type StandaloneApp = (props: StandaloneAppProps) => JSX.Element
 export const StandaloneApp: StandaloneApp = (props) => {
   const renderer = useRenderer()
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
+  const [submitted, setSubmitted] = createSignal<{ readonly text: string }>()
 
   const controller = createPitaController({
     message: props.message,
@@ -42,9 +42,8 @@ export const StandaloneApp: StandaloneApp = (props) => {
       props.onClose?.()
       renderer.destroy()
     },
-    send: (text) => {
-      props.onSend?.(text)
-      renderer.destroy()
+    submit: (text) => {
+      setSubmitted({ text })
     },
   })
 
@@ -79,12 +78,16 @@ export const StandaloneApp: StandaloneApp = (props) => {
     }
   })
 
+  const theme = () => pitaTheme(standalonePalette)
+
   return (
-    <PitaShell
-      controller={controller}
-      theme={() => pitaTheme(palette)}
-      editor={(node) => setEditor(node)}
-    />
+    <Show when={submitted()} fallback={<PitaShell controller={controller} theme={theme} editor={setEditor} />}>
+      {(result) => (
+        <PitaFrame theme={theme}>
+          <ReplyResultScreen text={result().text} />
+        </PitaFrame>
+      )}
+    </Show>
   )
 }
 
@@ -96,9 +99,6 @@ export const startStandalone = async (
     <StandaloneApp
       message={message}
       segments={segments}
-      onSend={(text) => {
-        process.stdout.write(`${text}\n`)
-      }}
     />
   ))
 }

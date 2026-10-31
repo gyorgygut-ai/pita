@@ -1,9 +1,10 @@
-import { For, Show, createEffect, onMount } from "solid-js"
+import { For, createEffect, createMemo, createSignal } from "solid-js"
 import { SyntaxStyle } from "@opentui/core"
-import type { RGBA, ScrollBoxRenderable, TextareaRenderable } from "@opentui/core"
+import type { RGBA, TextareaRenderable } from "@opentui/core"
 import type { JSX } from "@opentui/solid"
 import { quotedRanges } from "./compose.js"
 import type { PitaController } from "./controller.js"
+import { layoutRuns } from "./layout.js"
 import { isSelected } from "./selection.js"
 import type { PitaTheme } from "./theme.js"
 
@@ -12,21 +13,21 @@ export type SelectScreenProps = {
   readonly theme: () => PitaTheme
 }
 
-const background = (
+const runBackground = (
   theme: PitaTheme,
   selected: boolean,
   highlighted: boolean
-): RGBA | undefined => {
+): RGBA => {
   if (selected) {
     return theme.selected.background
   }
   if (highlighted) {
     return theme.highlighted.background
   }
-  return undefined
+  return theme.transparent
 }
 
-const foreground = (theme: PitaTheme, selected: boolean, highlighted: boolean): RGBA => {
+const runForeground = (theme: PitaTheme, selected: boolean, highlighted: boolean): RGBA => {
   if (selected) {
     return theme.selected.foreground
   }
@@ -39,14 +40,7 @@ const foreground = (theme: PitaTheme, selected: boolean, highlighted: boolean): 
 export type SelectScreen = (props: SelectScreenProps) => JSX.Element
 
 export const SelectScreen: SelectScreen = (props) => {
-  let scroll: ScrollBoxRenderable | undefined
-
-  createEffect(() => {
-    const index = props.controller.highlight()
-    if (index >= 0) {
-      scroll?.scrollChildIntoView(`pita-segment-${index}`)
-    }
-  })
+  const runs = createMemo(() => layoutRuns(props.controller.message(), props.controller.segments()))
 
   return (
     <box flexDirection="column" flexGrow={1}>
@@ -55,36 +49,27 @@ export const SelectScreen: SelectScreen = (props) => {
           Up and Down highlight, Space toggles, Enter composes, Esc closes
         </text>
       </box>
-      <scrollbox
-        flexGrow={1}
-        minHeight={0}
-        stickyScroll
-        ref={(value) => {
-          scroll = value
-        }}
-      >
-        <For each={props.controller.segments()}>
-          {(segment, index) => (
-            <box
-              id={`pita-segment-${index()}`}
-              backgroundColor={background(
-                props.theme(),
-                isSelected(props.controller.selected(), index()),
-                props.controller.highlight() === index()
-              )}
-            >
-              <text
-                fg={foreground(
-                  props.theme(),
-                  isSelected(props.controller.selected(), index()),
-                  props.controller.highlight() === index()
-                )}
-              >
-                {props.controller.message().slice(segment.start, segment.end)}
-              </text>
-            </box>
-          )}
-        </For>
+      <scrollbox flexGrow={1} minHeight={0} stickyScroll>
+        <text wrapMode="word">
+          <For each={runs()}>
+            {(run) => {
+              const selected = (): boolean =>
+                run.segment !== null && isSelected(props.controller.selected(), run.segment)
+              const highlighted = (): boolean =>
+                run.segment !== null && props.controller.highlight() === run.segment
+              return (
+                <span
+                  style={{
+                    fg: runForeground(props.theme(), selected(), highlighted()),
+                    bg: runBackground(props.theme(), selected(), highlighted()),
+                  }}
+                >
+                  {run.text}
+                </span>
+              )
+            }}
+          </For>
+        </text>
       </scrollbox>
     </box>
   )
@@ -98,26 +83,39 @@ export type ComposeScreenProps = {
 
 export type ComposeScreen = (props: ComposeScreenProps) => JSX.Element
 
-export const ComposeScreen: ComposeScreen = (props) => {
-  let node: TextareaRenderable | undefined
+type SelectedStyle = {
+  readonly id: number
+}
 
-  onMount(() => {
-    if (node === undefined) {
+export const ComposeScreen: ComposeScreen = (props) => {
+  const [node, setNode] = createSignal<TextareaRenderable>()
+  const [selectedStyle, setSelectedStyle] = createSignal<SelectedStyle>()
+
+  createEffect(() => {
+    const editor = node()
+    const reply = props.controller.reply()
+    if (editor === undefined) {
       return
     }
-    const style = SyntaxStyle.fromStyles({
-      "pita-selected": {
-        fg: props.theme().selected.foreground,
-        bg: props.theme().selected.background,
-      },
-    })
-    const styleId = style.resolveStyleId("pita-selected")
-    if (styleId === null) {
-      return
+    let entry = selectedStyle()
+    if (entry === undefined) {
+      const style = SyntaxStyle.fromStyles({
+        "pita-selected": {
+          fg: props.theme().selected.foreground,
+          bg: props.theme().selected.background,
+        },
+      })
+      const id = style.resolveStyleId("pita-selected")
+      if (id === null) {
+        return
+      }
+      editor.syntaxStyle = style
+      entry = { id }
+      setSelectedStyle(entry)
     }
-    node.syntaxStyle = style
-    for (const range of quotedRanges(props.controller.reply())) {
-      node.extmarks.create({ start: range.start, end: range.end, styleId })
+    editor.extmarks.clear()
+    for (const range of quotedRanges(reply)) {
+      editor.extmarks.create({ start: range.start, end: range.end, styleId: entry.id })
     }
   })
 
@@ -126,11 +124,12 @@ export const ComposeScreen: ComposeScreen = (props) => {
       <text fg={props.theme().muted}>Enter sends, Esc returns to the selection</text>
       <textarea
         ref={(value) => {
-          node = value
+          setNode(value)
           props.editor(value)
         }}
         focused
         initialValue={props.controller.reply()}
+        onContentChange={() => props.controller.setReply(node()?.plainText ?? "")}
       />
     </box>
   )
@@ -144,18 +143,39 @@ export type PitaShellProps = {
 
 export type PitaShell = (props: PitaShellProps) => JSX.Element
 
-export const PitaShell: PitaShell = (props) => (
+export type PitaFrameProps = {
+  readonly theme: () => PitaTheme
+  readonly children: JSX.Element
+}
+
+export const PitaFrame = (props: PitaFrameProps): JSX.Element => (
   <box
     flexDirection="column"
     padding={1}
     borderStyle="single"
     borderColor={props.theme().border}
   >
-    <Show when={props.controller.screen() === "select"}>
-      <SelectScreen controller={props.controller} theme={props.theme} />
-    </Show>
-    <Show when={props.controller.screen() === "compose"}>
-      <ComposeScreen {...props} />
-    </Show>
+    {props.children}
   </box>
+)
+
+export type ReplyResultScreenProps = { readonly text: string }
+
+export const ReplyResultScreen = (props: ReplyResultScreenProps): JSX.Element => (
+  <box flexDirection="column" flexGrow={1}>
+    <text>Composed reply</text>
+    <scrollbox flexGrow={1} minHeight={0}>
+      <text wrapMode="word">{props.text}</text>
+    </scrollbox>
+  </box>
+)
+
+export const PitaShell: PitaShell = (props) => (
+  <PitaFrame theme={props.theme}>
+    {props.controller.screen() === "select" ? (
+      <SelectScreen controller={props.controller} theme={props.theme} />
+    ) : (
+      <ComposeScreen {...props} />
+    )}
+  </PitaFrame>
 )

@@ -2,7 +2,7 @@ import { Show, createSignal, onMount } from "solid-js"
 import type { TextareaRenderable } from "@opentui/core"
 import type { JSX } from "@opentui/solid"
 import { Plugin, usePlugin } from "@opencode/plugin/tui"
-import type { PanelInput } from "@opencode/plugin/tui/context"
+import type { ResolvedTheme } from "@opencode/theme/tui"
 import { apfel } from "./apfel.js"
 import { createPitaController } from "./controller.js"
 import type { PitaController } from "./controller.js"
@@ -10,23 +10,34 @@ import { parseOptions } from "./options.js"
 import { PitaShell } from "./screens.js"
 import { resolveStrategy } from "./strategies/index.js"
 import type { Strategy } from "./strategies/index.js"
-import { opencodePitaTheme } from "./theme-opencode.js"
+import type { SubmissionStrategy } from "./strategies/submission.js"
+import type { PitaTheme } from "./theme.js"
+import { pitaTheme } from "./theme.js"
 
-export const pitaPanelName = "pita.reply"
+export const pitaPageName = "pita.reply"
+
+type OpenCodePrompt = (
+  input: { readonly sessionID: string; readonly text: string }
+) => void | Promise<unknown>
+
+export const createOpenCodeSubmissionStrategy = (
+  sessionID: string,
+  prompt: OpenCodePrompt
+): SubmissionStrategy =>
+  (text) => prompt({ sessionID, text })
+
+const opencodePitaTheme = (theme: ResolvedTheme, mode: "dark" | "light"): PitaTheme =>
+  pitaTheme({
+    accent: theme.hue.accent[200],
+    primary: theme.hue.interactive[200],
+    onAccent: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
+    onPrimary: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
+    text: theme.text.base,
+    muted: theme.text.muted,
+    border: theme.border.base,
+  })
 
 export type AssistantText = (context: Plugin.Context, sessionID: string) => string
-
-export type PitaPanelProps = {
-  readonly panel: PanelInput
-  readonly strategy: Strategy
-}
-
-export type PitaPanelClaim = {
-  readonly append: "session.panel"
-  readonly render: (panel: PanelInput) => JSX.Element
-}
-
-export type PitaPanelContribution = (strategy: Strategy) => PitaPanelClaim
 
 export const lastAssistantText: AssistantText = (context, sessionID) => {
   const messages = context.data.session.message.list(sessionID)
@@ -40,15 +51,29 @@ export const lastAssistantText: AssistantText = (context, sessionID) => {
     .join("")
 }
 
-export type PitaPanel = (props: PitaPanelProps) => JSX.Element
+export type PitaReplyProps = {
+  readonly sessionID: string
+  readonly strategy: Strategy
+}
 
-export const PitaPanel: PitaPanel = (props) => {
+export type PitaReply = (props: PitaReplyProps) => JSX.Element
+
+export const PitaReply: PitaReply = (props) => {
   const context = usePlugin()
   const theme = () => opencodePitaTheme(context.theme, context.themeMode)
   const [controller, setController] = createSignal<PitaController>()
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
 
   const attachEditor = (node: TextareaRenderable) => setEditor(node)
+
+  const close = (): void => {
+    context.ui.router.navigate({ type: "session", sessionID: props.sessionID })
+  }
+
+  const submit = createOpenCodeSubmissionStrategy(
+    props.sessionID,
+    (input) => context.client.session.prompt(input)
+  )
 
   const accept = (): void => {
     const current = controller()
@@ -108,15 +133,14 @@ export const PitaPanel: PitaPanel = (props) => {
   }))
 
   const load = async (): Promise<void> => {
-    await context.data.session.message.sync(props.panel.sessionID)
-    const message = lastAssistantText(context, props.panel.sessionID)
+    await context.data.session.message.sync(props.sessionID)
+    const message = lastAssistantText(context, props.sessionID)
     setController(
       createPitaController({
         message,
         segments: await props.strategy(message),
-        close: () => props.panel.close(),
-        send: (text) =>
-          context.client.session.prompt({ sessionID: props.panel.sessionID, text }),
+        close,
+        submit,
       })
     )
   }
@@ -132,22 +156,23 @@ export const PitaPanel: PitaPanel = (props) => {
   )
 }
 
-export const pitaPanelContribution: PitaPanelContribution = (strategy) => ({
-  append: "session.panel",
-  render: (panel) => (
-    <Show when={panel.name === pitaPanelName}>
-      <PitaPanel panel={panel} strategy={strategy} />
-    </Show>
-  ),
-})
-
 export default Plugin.define({
   id: "pita",
   setup: (context) => {
-    const { strategy } = parseOptions(context.options)
-    const unregister = context.ui.slot(
-      pitaPanelContribution(resolveStrategy(strategy, { runApfel: apfel }))
-    )
+    const { strategy, keybind } = parseOptions(context.options)
+    const run = resolveStrategy(strategy, { runApfel: apfel })
+
+    const unregister = context.ui.router.register({
+      name: pitaPageName,
+      render: ({ data }) => {
+        const sessionID = typeof data?.sessionID === "string" ? data.sessionID : undefined
+        return (
+          <Show when={sessionID}>
+            {(current) => <PitaReply sessionID={current()} strategy={run} />}
+          </Show>
+        )
+      },
+    })
 
     context.keymap.layer(() => ({
       mode: "global",
@@ -156,10 +181,18 @@ export default Plugin.define({
           id: "pita.open",
           title: "Pita: reply to segments",
           description: "Select segments of the last assistant message and compose a reply",
-          bind: "<leader>p",
+          bind: keybind,
           palette: true,
           run: () => {
-            context.ui.panel.open(pitaPanelName, { presentation: "fullscreen" })
+            const current = context.ui.router.current()
+            if (current.type !== "session") {
+              return
+            }
+            context.ui.router.navigate({
+              type: "plugin",
+              name: pitaPageName,
+              data: { sessionID: current.sessionID },
+            })
           },
         },
       ],

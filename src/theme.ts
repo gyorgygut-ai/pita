@@ -1,4 +1,6 @@
-import type { RGBA } from "@opentui/core"
+import { RGBA } from "@opentui/core"
+
+const transparent = RGBA.fromInts(0, 0, 0, 0)
 
 export type PitaStyle = {
   readonly background: RGBA
@@ -8,6 +10,7 @@ export type PitaStyle = {
 export type PitaTheme = {
   readonly highlighted: PitaStyle
   readonly selected: PitaStyle
+  readonly transparent: RGBA
   readonly text: RGBA
   readonly muted: RGBA
   readonly border: RGBA
@@ -28,6 +31,7 @@ export type ResolvePitaTheme = (palette: PitaPalette) => PitaTheme
 export const pitaTheme: ResolvePitaTheme = (palette) => ({
   highlighted: { background: palette.accent, foreground: palette.onAccent },
   selected: { background: palette.primary, foreground: palette.onPrimary },
+  transparent,
   text: palette.text,
   muted: palette.muted,
   border: palette.border,

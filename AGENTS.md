@@ -42,8 +42,8 @@
 - **Approach**: Strategy pattern, each mapping message to [{startIndex, endIndex}]
 - **Outcome**: The message can be navigated to toggle segments as selected
 - **Acceptance**:
-  - Strategy to use configurable in settings
-  - Assistant message formatting unchanged
+  - Strategy to use configurable in settings; used in UI
+  - Assistant message formatting unchanged; appears with the same layout, formatting
   - `Highlighted`: Opencode theme `accent` bg - `theme.hue.accent[200]` + fitting color
   - `Selected`: Opencode theme `primary` bg - `theme.hue.interactive[200]` + fitting color
   - `Up` key highlights the previous / last segment
@@ -57,7 +57,6 @@
 
 - **Tool**: `src/strategies/sentence.ts`
 - **Acceptance**:
-
   - Default setting
   - Input: message as string
   - Split text into individual sentences

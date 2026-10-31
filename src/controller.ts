@@ -2,6 +2,7 @@ import { createSignal } from "solid-js"
 import { composeReply } from "./compose.js"
 import { nextIndex, prevIndex, toggleSelected } from "./selection.js"
 import type { Segment } from "./segment.js"
+import type { SubmissionStrategy } from "./strategies/submission.js"
 
 export type PitaScreen = "select" | "compose"
 
@@ -9,7 +10,7 @@ export type PitaControllerDeps = {
   readonly message: string
   readonly segments: readonly Segment[]
   readonly close: () => void
-  readonly send: (text: string) => void | Promise<unknown>
+  readonly submit: SubmissionStrategy
 }
 
 export type PitaController = {
@@ -23,6 +24,7 @@ export type PitaController = {
   prev: () => void
   toggle: () => void
   compose: () => void
+  setReply: (text: string) => void
   submit: (text: string) => void
   back: () => void
 }
@@ -53,7 +55,7 @@ export const createPitaController = (deps: PitaControllerDeps): PitaController =
   }
 
   const submit = (text: string): void => {
-    void deps.send(text)
+    void deps.submit(text)
   }
 
   const back = (): void => {
@@ -75,6 +77,7 @@ export const createPitaController = (deps: PitaControllerDeps): PitaController =
     prev,
     toggle,
     compose,
+    setReply,
     submit,
     back,
   }
