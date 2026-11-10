@@ -12,4 +12,4 @@ cleanup() {
 }
 
 trap cleanup EXIT INT TERM
-node --watch --experimental-ffi --conditions=browser dist/standalone.js
+node --watch --experimental-ffi --conditions=browser dist/hosts/standalone/standalone.js

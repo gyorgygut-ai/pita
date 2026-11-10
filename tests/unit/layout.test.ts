@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { layoutRuns } from "../../src/layout"
-import type { Segment } from "../../src/segment"
+import { layoutRuns } from "../../src/core/layout"
+import type { Segment } from "../../src/core/segment"
 
 const message = "Alpha.\n\nBeta.\nGamma."
 const segments: readonly Segment[] = [

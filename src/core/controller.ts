@@ -2,7 +2,7 @@ import { createSignal } from "solid-js"
 import { composeReply } from "./compose.js"
 import { nextIndex, prevIndex, toggleSelected } from "./selection.js"
 import type { Segment } from "./segment.js"
-import type { SubmissionStrategy } from "./strategies/submission.js"
+import type { SubmissionStrategy } from "../strategies/submission.js"
 
 export type PitaScreen = "select" | "compose"
 

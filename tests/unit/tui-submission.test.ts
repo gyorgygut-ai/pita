@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { createOpenCodeSubmissionStrategy } from "../../src/tui"
+import { createOpenCodeSubmissionStrategy } from "../../src/hosts/opencode/tui"
 
 describe("createOpenCodeSubmissionStrategy", () => {
   it("prompts the target session with submitted text", async () => {

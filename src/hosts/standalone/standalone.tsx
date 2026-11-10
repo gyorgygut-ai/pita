@@ -4,13 +4,18 @@ import type { TextareaRenderable } from "@opentui/core"
 import { render, useKeyboard, useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
 import { pathToFileURL } from "node:url"
-import { createPitaController } from "./controller.js"
-import { standaloneMessage } from "./fixtures.js"
-import { PitaFrame, PitaShell, ReplyResultScreen } from "./screens.js"
-import type { Segment } from "./segment.js"
-import { sentenceStrategy } from "./strategies/sentence.js"
-import { pitaTheme } from "./theme.js"
-import type { PitaPalette } from "./theme.js"
+import { readFileSync } from "node:fs"
+import { createPitaController } from "../../core/controller.js"
+import { PitaFrame, PitaShell, ReplyResultScreen } from "../../ui/screens.js"
+import type { Segment } from "../../core/segment.js"
+import { sentenceStrategy } from "../../strategies/sentence.js"
+import { pitaTheme } from "../../ui/theme.js"
+import type { PitaPalette } from "../../ui/theme.js"
+
+export const standaloneMessage = readFileSync(
+  new URL("../../../tests/fixtures/standalone-message.txt", import.meta.url),
+  "utf8",
+).trimEnd()
 
 export const standalonePalette: PitaPalette = {
   accent: RGBA.fromInts(59, 130, 246),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/selection"
+import { isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/core/selection"
 import { readFixture } from "../read-fixture"
 
 type IndexCase = { current: number; count: number; expected: number }

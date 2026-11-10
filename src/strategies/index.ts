@@ -1,4 +1,4 @@
-import type { Segment } from "../segment.js"
+import type { Segment } from "../core/segment.js"
 import { apfelStrategy, type ApfelRunner } from "./llm-apfel.js"
 import { sentenceStrategy } from "./sentence.js"
 

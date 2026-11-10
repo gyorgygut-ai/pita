@@ -1,4 +1,4 @@
-import type { Segment } from "../segment.js"
+import type { Segment } from "../core/segment.js"
 import type { Strategy } from "./index.js"
 
 const terminators = ".!?…"

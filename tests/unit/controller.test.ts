@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { createPitaController } from "../../src/controller"
-import type { Segment } from "../../src/segment"
+import { createPitaController } from "../../src/core/controller"
+import type { Segment } from "../../src/core/segment"
 import type { SubmissionStrategy } from "../../src/strategies/submission"
 
 const message = "One. Two. Three."

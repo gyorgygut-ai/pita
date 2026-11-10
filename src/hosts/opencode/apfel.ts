@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
-import type { ApfelRunner } from "./strategies/llm-apfel.js"
+import type { ApfelRunner } from "../../strategies/llm-apfel.js"
 
 export type Exec = (file: string, args: readonly string[]) => Promise<string>
 

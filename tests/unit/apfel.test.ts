@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { apfelArgs, createApfel } from "../../src/apfel"
-import type { Exec } from "../../src/apfel"
+import { apfelArgs, createApfel } from "../../src/hosts/opencode/apfel"
+import type { Exec } from "../../src/hosts/opencode/apfel"
 
 describe("apfelArgs", () => {
   it("asks apfel for json output without color", () => {

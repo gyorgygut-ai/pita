@@ -16,7 +16,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest ui",
-    "bundle:standalone": "npm run build && node --experimental-ffi --conditions=browser dist/standalone.js",
+    "bundle:standalone": "npm run build && node --experimental-ffi --conditions=browser dist/hosts/standalone/standalone.js",
     "watch:standalone": "sh scripts/watch-standalone.sh",
     "test:unit": "vitest run tests/unit",
     "test:acceptance": "npm run build && node --experimental-ffi --conditions=browser --test tests/acceptance/*.test.ts",

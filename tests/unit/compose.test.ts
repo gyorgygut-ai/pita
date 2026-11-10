@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { composeReply, quotedRanges } from "../../src/compose"
-import type { Segment } from "../../src/segment"
+import { composeReply, quotedRanges } from "../../src/core/compose"
+import type { Segment } from "../../src/core/segment"
 import { readFixture } from "../read-fixture"
 
 const fixture: {

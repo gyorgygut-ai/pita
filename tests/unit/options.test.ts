@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseOptions } from "../../src/options"
+import { parseOptions } from "../../src/config/options"
 
 describe("parseOptions", () => {
   it("defaults to the sentence strategy", () => {

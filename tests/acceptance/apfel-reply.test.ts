@@ -1,8 +1,8 @@
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
-import { composeReply } from "../../dist/compose.js"
-import { toggleSelected } from "../../dist/selection.js"
+import { composeReply } from "../../dist/core/compose.js"
+import { toggleSelected } from "../../dist/core/selection.js"
 import { resolveStrategy } from "../../dist/strategies/index.js"
 
 const readFixture = (name: string): string =>

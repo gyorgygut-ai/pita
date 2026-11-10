@@ -1,12 +1,14 @@
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import { createComponent } from "solid-js"
 import { testRender } from "@opentui/solid"
 import type { TestRendererSetup } from "@opentui/core/testing"
-import type { Segment } from "../../src/segment.js"
-import { StandaloneApp, standalonePalette } from "../../dist/standalone.js"
+import type { Segment } from "../../src/core/segment.js"
+import { StandaloneApp, standaloneMessage, standalonePalette } from "../../dist/hosts/standalone/standalone.js"
 
 const message = "Alpha.\n\nBeta.\nGamma."
+const fixture = readFileSync(new URL("../fixtures/standalone-message.txt", import.meta.url), "utf8")
 const segments: readonly Segment[] = [
   { start: 0, end: 6 },
   { start: 8, end: 13 },
@@ -71,6 +73,10 @@ const submitEditedReply = async (setup: TestRendererSetup): Promise<void> => {
 }
 
 await describe("segment selection screen", async () => {
+  await it("uses the shared standalone fixture", () => {
+    assert.equal(standaloneMessage, fixture)
+  })
+
   await it("keeps the message layout and blank lines", async () => {
     const setup = await mount({})
     await setup.flush()
