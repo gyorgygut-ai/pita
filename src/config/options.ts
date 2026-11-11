@@ -11,8 +11,8 @@ const defaultKeybind = "<leader>p"
 
 const isStrategyName = (value: unknown): value is StrategyName => {
   switch (value) {
-    case "sentence":
     case "apfel":
+    case "regex":
       return true
     default:
       return false
@@ -20,7 +20,7 @@ const isStrategyName = (value: unknown): value is StrategyName => {
 }
 
 export const parseOptions: ParseOptions = (options) => {
-  const strategy = options.strategy ?? "sentence"
+  const strategy = options.strategy ?? "regex"
   if (!isStrategyName(strategy)) {
     throw new Error(`unknown strategy: ${JSON.stringify(strategy)}`)
   }

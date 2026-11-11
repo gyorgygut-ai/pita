@@ -39,16 +39,21 @@ const opencodePitaTheme = (theme: ResolvedTheme, mode: "dark" | "light"): PitaTh
 
 export type AssistantText = (context: Plugin.Context, sessionID: string) => string
 
+export const assistantText = (
+  content: readonly { readonly type: string; readonly text?: string }[]
+): string =>
+  content
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("")
+
 export const lastAssistantText: AssistantText = (context, sessionID) => {
   const messages = context.data.session.message.list(sessionID)
   const assistant = messages.filter((message) => message.type === "assistant").at(-1)
   if (assistant === undefined) {
     return ""
   }
-  return assistant.content
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("")
+  return assistantText(assistant.content)
 }
 
 export type PitaReplyProps = {

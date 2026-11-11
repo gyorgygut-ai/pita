@@ -20,6 +20,7 @@
     "watch:standalone": "sh scripts/watch-standalone.sh",
     "test:unit": "vitest run tests/unit",
     "test:acceptance": "npm run build && node --experimental-ffi --conditions=browser --test tests/acceptance/*.test.ts",
+    "test:apfel:live": "npm run build && node --experimental-ffi --conditions=browser --test tests/live/apfel.test.ts",
     "verify": "npm run lint && npm run build && npm run test:unit && npm run test:acceptance"
   },
   "peerDependencies": {

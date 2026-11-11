@@ -53,14 +53,14 @@
   - `Esc` key closes segment selection; goes back to chat
   - `Enter` key submits selection; goes to next screen
 
-**2.1 Strategy: Sentence**:
+**2.1 Strategy: Regex**:
 
-- **Tool**: `src/strategies/sentence.ts`
+- **Tool**: `src/strategies/regex.ts`
 - **Acceptance**:
   - Default setting
   - Input: message as string
-  - Split text into individual sentences
-  - Output: segments of { start, end }
+  - Splits text into logical structural segments (headings, list items, blockquotes, fences, thematic breaks, paragraphs, with optional sentence splitting for long paragraphs)
+  - Output: segments of { start, end } character offsets, ordered and contiguous, no gaps/overlaps by construction
 
 **2.2 Strategy: Apfel**:
 
@@ -123,7 +123,6 @@
   - `Enter` on a selection displays `Reply Composition`
   - `watch:standalone` rebuilds and restarts on `./src` change
   - Shared modules import no `@opencode/*`: `screens`, `controller`, `compose`, `selection`, `strategies`, `theme`
-  - Host glue limited to `tui.tsx` (plugin) and `standalone.tsx` (TUI)
 
 ---
 

@@ -9,7 +9,6 @@ const readFixture = (name: string): string =>
   readFileSync(new URL(`../fixtures/${name}`, import.meta.url), "utf8")
 
 const message = readFixture("apfel-message.txt")
-
 const runner = async (): Promise<string> => readFixture("apfel-output.json")
 
 await describe("reply from apfel segments", async () => {

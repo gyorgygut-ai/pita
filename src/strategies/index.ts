@@ -1,8 +1,8 @@
 import type { Segment } from "../core/segment.js"
 import { apfelStrategy, type ApfelRunner } from "./llm-apfel.js"
-import { sentenceStrategy } from "./sentence.js"
+import { regexStrategy } from "./regex.js"
 
-export type StrategyName = "sentence" | "apfel"
+export type StrategyName = "apfel" | "regex"
 
 export type Strategy = (message: string) => Promise<Segment[]>
 
@@ -16,5 +16,7 @@ export const resolveStrategy: ResolveStrategy = (name, deps) => {
   if (name === "apfel") {
     return apfelStrategy(deps.runApfel)
   }
-  return sentenceStrategy
+  return regexStrategy
 }
+
+export { regexStrategy }

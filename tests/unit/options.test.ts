@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest"
 import { parseOptions } from "../../src/config/options"
 
 describe("parseOptions", () => {
-  it("defaults to the sentence strategy", () => {
-    expect(parseOptions({})).toEqual({ strategy: "sentence", keybind: "<leader>p" })
+  it("defaults to the regex strategy", () => {
+    expect(parseOptions({})).toEqual({ strategy: "regex", keybind: "<leader>p" })
   })
 
   it("accepts the apfel strategy", () => {

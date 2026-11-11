@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs"
 import { createPitaController } from "../../core/controller.js"
 import { PitaFrame, PitaShell, ReplyResultScreen } from "../../ui/screens.js"
 import type { Segment } from "../../core/segment.js"
-import { sentenceStrategy } from "../../strategies/sentence.js"
+import { regexStrategy } from "../../strategies/index.js"
 import { pitaTheme } from "../../ui/theme.js"
 import type { PitaPalette } from "../../ui/theme.js"
 
@@ -99,7 +99,7 @@ export const StandaloneApp: StandaloneApp = (props) => {
 export const startStandalone = async (
   message: string = standaloneMessage
 ): Promise<void> => {
-  const segments = await sentenceStrategy(message)
+  const segments = await regexStrategy(message)
   await render(() => (
     <StandaloneApp
       message={message}
