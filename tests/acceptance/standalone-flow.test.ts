@@ -103,7 +103,7 @@ await describe("segment selection screen", async () => {
 
   await it("marks a selected segment with the primary background", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "space"])
+    await act(setup, ["down", "space", "down"])
     assert.ok(span(setup, "Alpha.")?.bg.equals(standalonePalette.primary))
     setup.renderer.destroy()
   })
@@ -114,6 +114,16 @@ await describe("segment selection screen", async () => {
     assert.ok(span(setup, "Alpha.")?.bg.equals(standalonePalette.accent))
     assert.ok(span(setup, "Beta.")?.bg.equals(standalonePalette.primary))
     assert.notEqual(span(setup, "Gamma.")?.bg?.equals(standalonePalette.accent), true)
+    setup.renderer.destroy()
+  })
+
+  await it("shows cursor highlight separately from another selected segment", async () => {
+    const setup = await mount({})
+    await act(setup, ["down", "space", "down", "space", "up"])
+    assert.deepEqual([
+      span(setup, "Alpha.")?.bg.equals(standalonePalette.accent),
+      span(setup, "Beta.")?.bg.equals(standalonePalette.primary),
+    ], [true, true])
     setup.renderer.destroy()
   })
 

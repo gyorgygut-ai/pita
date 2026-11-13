@@ -1,6 +1,7 @@
 import { For, createEffect, createMemo, createSignal } from "solid-js"
 import { SyntaxStyle } from "@opentui/core"
 import type { RGBA, TextareaRenderable } from "@opentui/core"
+import { useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
 import { quotedRanges } from "../core/compose.js"
 import type { PitaController } from "../core/controller.js"
@@ -18,21 +19,21 @@ const runBackground = (
   selected: boolean,
   highlighted: boolean
 ): RGBA => {
-  if (selected) {
-    return theme.selected.background
-  }
   if (highlighted) {
     return theme.highlighted.background
+  }
+  if (selected) {
+    return theme.selected.background
   }
   return theme.transparent
 }
 
 const runForeground = (theme: PitaTheme, selected: boolean, highlighted: boolean): RGBA => {
-  if (selected) {
-    return theme.selected.foreground
-  }
   if (highlighted) {
     return theme.highlighted.foreground
+  }
+  if (selected) {
+    return theme.selected.foreground
   }
   return theme.text
 }
@@ -87,7 +88,23 @@ type SelectedStyle = {
   readonly id: number
 }
 
+type SyntaxStyles = Record<string, { readonly fg?: RGBA; readonly bg?: RGBA }>
+type SyntaxStyleRenderer = {
+  readonly nativeScene?: { readonly resourceContext?: unknown }
+}
+type SyntaxStyleFactory = (styles: SyntaxStyles, resourceContext?: unknown) => SyntaxStyle
+
+export const createSelectedSyntaxStyle = (
+  renderer: SyntaxStyleRenderer,
+  styles: SyntaxStyles,
+  factory: SyntaxStyleFactory = SyntaxStyle.fromStyles as unknown as SyntaxStyleFactory,
+): SyntaxStyle => {
+  const resourceContext = renderer.nativeScene?.resourceContext
+  return resourceContext === undefined ? factory(styles) : factory(styles, resourceContext)
+}
+
 export const ComposeScreen: ComposeScreen = (props) => {
+  const renderer = useRenderer()
   const [node, setNode] = createSignal<TextareaRenderable>()
   const [selectedStyle, setSelectedStyle] = createSignal<SelectedStyle>()
 
@@ -99,12 +116,13 @@ export const ComposeScreen: ComposeScreen = (props) => {
     }
     let entry = selectedStyle()
     if (entry === undefined) {
-      const style = SyntaxStyle.fromStyles({
+      const selectedStyles = {
         "pita-selected": {
           fg: props.theme().selected.foreground,
           bg: props.theme().selected.background,
         },
-      })
+      }
+      const style = createSelectedSyntaxStyle(renderer, selectedStyles)
       const id = style.resolveStyleId("pita-selected")
       if (id === null) {
         return

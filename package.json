@@ -4,12 +4,16 @@
   "version": "0.0.0",
   "description": "OpenCode plugin 'pita'",
   "dependencies": {
-    "@opencode/plugin": "2.0.23"
+    "@opencode/plugin": "2.2.7"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json --noEmit && babel src --out-dir dist --extensions .ts,.tsx --delete-dir-on-start",
     "bundle:local": "npm run build && node scripts/opencode-bundle.mjs local && npm install --prefix .opencode/plugins/pita --omit=dev --no-package-lock --ignore-scripts",
     "bundle:global": "npm run build && node scripts/opencode-bundle.mjs global && npm install --prefix $HOME/.config/opencode/plugins/pita --omit=dev --no-package-lock --ignore-scripts",
+    "register:local": "node scripts/plugin-config.mjs register local",
+    "register:global": "node scripts/plugin-config.mjs register global",
+    "unregister:local": "node scripts/plugin-config.mjs unregister local",
+    "unregister:global": "node scripts/plugin-config.mjs unregister global",
     "watch:local": "npm run bundle:local && babel src --out-dir .opencode/plugins/pita --extensions .ts,.tsx --watch",
     "watch:global": "npm run bundle:global && babel src --out-dir $HOME/.config/opencode/plugins/pita --extensions .ts,.tsx --watch",
     "lint": "oxlint",
@@ -24,17 +28,15 @@
     "verify": "npm run lint && npm run build && npm run test:unit && npm run test:acceptance"
   },
   "peerDependencies": {
-    "@opentui/core": ">=0.5.14",
-    "@opentui/solid": ">=0.5.14",
-    "solid-js": ">=1.9.0"
+    "@opencode/theme": "2.2.7",
+    "@opentui/core": ">=0.8.1",
+    "@opentui/solid": ">=0.8.1",
+    "solid-js": ">=1.9.12"
   },
   "devDependencies": {
     "@babel/cli": "^7.29.7",
     "@babel/core": "^7.29.7",
     "@babel/preset-typescript": "^7.29.0",
-    "@opencode/theme": "2.0.23",
-    "@opentui/core": "0.5.14",
-    "@opentui/solid": "0.5.14",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^26.6.5",
     "babel-preset-solid": "^1.9.12",

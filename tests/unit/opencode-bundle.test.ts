@@ -35,7 +35,13 @@ describe("installOpenCodePlugin", () => {
     const manifest = JSON.parse(await readFile(join(fixture.plugin, "package.json"), "utf8"))
     expect(manifest.exports["./tui"]).toBe("./hosts/opencode/tui.js")
     expect(await readFile(join(fixture.plugin, manifest.exports["./tui"]), "utf8")).toContain("export default")
-    expect(manifest.dependencies["@opencode/plugin"]).toBe("2.0.23")
+    expect(manifest.dependencies).toEqual({
+      "@opencode/plugin": "2.2.7",
+      "@opencode/theme": "2.2.7",
+      "@opentui/core": ">=0.8.1",
+      "@opentui/solid": ">=0.8.1",
+      "solid-js": ">=1.9.12",
+    })
     expect(JSON.parse(await readFile(fixture.cliConfig, "utf8")).plugins).toEqual([fixture.plugin])
   })
 

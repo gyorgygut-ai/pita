@@ -2,85 +2,105 @@ import type { Segment } from "../core/segment.js"
 import type { Strategy } from "./index.js"
 
 const LONG_THRESHOLD = 120
+const STRUCTURE_PATTERN =
+  /^(?: {0,3}#{1,6}[^\n]*$| {0,3}(?:[-*+])[ \t]+[^\n]*(?:\n {0,3}(?:[-*+])[ \t]+[^\n]*)*$| {0,3}>[^\n]*$| {0,3}```[\s\S]*?```$| {0,3}(?:[-*_])(?:[ \t]*[-*_]){2,}[^\n]*$| {0,3}\d+[.)][ \t]+[^\n]*(?:\n(?: {0,3}\d+[.)][ \t]+[^\n]*|[^\n]+))*)/gm
+
+const splitRange = (message: string, start: number, end: number): Segment[] => {
+  if (start >= end) {
+    return []
+  }
+  if (end - start <= LONG_THRESHOLD) {
+    return [{ start, end }]
+  }
+
+  const lines = Array.from(message.slice(start, end).matchAll(/[^\n]*\n|[^\n]+$/g)).map((match) => ({
+    start: start + (match.index ?? 0),
+    end: start + (match.index ?? 0) + match[0].length,
+  }))
+  const grouped = lines.reduce<{
+    segments: Segment[]
+    start: number | undefined
+    end: number | undefined
+    length: number
+  }>(
+    (group, line) => {
+      if (
+        group.start !== undefined &&
+        group.end !== undefined &&
+        group.length > 0 &&
+        group.length + line.end - line.start > LONG_THRESHOLD
+      ) {
+        const text = message.slice(group.start, group.end)
+        const sentenceBoundary = Array.from(text.matchAll(/(?<=[.!?])(?=\s)/g))
+          .map((match) => match.index)
+          .find((index) => index > 0 && index < text.length)
+
+        if (sentenceBoundary !== undefined) {
+          const chunkStart = group.start + sentenceBoundary
+          return {
+            segments: [...group.segments, { start: group.start, end: chunkStart }],
+            start: chunkStart,
+            end: line.end,
+            length: line.end - chunkStart,
+          }
+        }
+
+        return {
+          segments: [...group.segments, { start: group.start, end: group.end }],
+          start: line.start,
+          end: line.end,
+          length: line.end - line.start,
+        }
+      }
+
+      return {
+        ...group,
+        start: group.start ?? line.start,
+        end: line.end,
+        length: group.length + line.end - line.start,
+      }
+    },
+    { segments: [], start: undefined, end: undefined, length: 0 },
+  )
+
+  return grouped.start === undefined || grouped.end === undefined
+    ? grouped.segments
+    : [...grouped.segments, { start: grouped.start, end: grouped.end }]
+}
+
+const trimSegment = (message: string, segment: Segment): Segment => {
+  const text = message.slice(segment.start, segment.end)
+  const leading = text.match(/^\s*/)?.[0].length ?? 0
+  const trailing = text.match(/\s*$/)?.[0].length ?? 0
+  return { start: segment.start + leading, end: segment.end - trailing }
+}
 
 export const regexStrategy: Strategy = (message: string) => {
-  const pats = [
-    /^ {0,3}#{1,6}[^\n]*$/gm,
-    /^ {0,3}(?:[-*+]|\d+[.)])[ \t]+[^\n]*$/gm,
-    /^ {0,3}>[^\n]*$/gm,
-    /^ {0,3}```[\s\S]*?```$/gm,
-    /^ {0,3}(?:[-*_])(?:[ \t]*[-*_]){2,}[^\n]*$/gm,
-  ]
-  const matches: Array<{start: number; end: number}> = [
-    ...pats.flatMap(r => Array.from(message.matchAll(r))).map(m => ({ start: m.index, end: m.index + m[0].length }))
-  ].sort((a, b) => a.start - b.start)
+  const matches = Array.from(message.matchAll(STRUCTURE_PATTERN)).map((match) => ({
+    start: match.index ?? 0,
+    end: (match.index ?? 0) + match[0].length,
+  }))
 
-  const reduceFn = ([s, c]: [Segment[], number], { start, end }: { start: number; end: number }): [Segment[], number] => {
-    if (c < start) {
-      const gap = message.slice(c, start)
-      if (gap.trim().length > 0) {
-        if (gap.length > LONG_THRESHOLD) {
-          const lines = gap.split('\n')
-          const segs: Segment[] = []
-          let current_seg: string[] = []
-          let current_length = 0
-          
-          for (const line of lines) {
-            const line_length = line.length + 1
-            if (current_length + line_length > LONG_THRESHOLD && current_seg.length > 0) {
-              segs.push({ start: c + current_seg[0], end: c + current_seg[current_seg.length - 1] + line_length })
-              current_seg = []
-              current_length = 0
-            }
-            current_seg.push(line)
-            current_length += line.length + 1
-          }
-          if (current_seg.length > 0) {
-            segs.push({ start: c + current_seg[0], end: c + current_seg[current_seg.length - 1] + line_length })
-          }
-          s = [...s, ...segs]
-          c = start
-        } else {
-          s = [...s, { start: c, end: start }]
-          c = start
-        }
+  const result = matches.reduce<{ segments: Segment[]; cursor: number }>(
+    (state, match) => {
+      if (match.start < state.cursor) {
+        return state
       }
-    }
-    s = [...s, { start, end }]
-    c = end
-    return [s, c]
-  }
-
-  const [segs, cursor] = matches.reduce(reduceFn, [[], 0])
-
-  if (cursor < message.length) {
-    const rest = message.slice(cursor)
-    if (rest.trim().length > 0) {
-      if (rest.length > LONG_THRESHOLD) {
-        const lines = rest.split('\n')
-        const segs: Segment[] = []
-        let current_seg: string[] = []
-        let current_length = 0
-        
-        for (const line of lines) {
-          const line_length = line.length + 1
-          if (current_length + line_length > LONG_THRESHOLD && current_seg.length > 0) {
-            segs.push({ start: cursor + current_seg[0], end: cursor + current_seg[current_seg.length - 1] + line_length })
-            current_seg = []
-            current_length = 0
-          }
-          current_seg.push(line)
-          current_length += line.length + 1
-        }
-        if (current_seg.length > 0) {
-          segs.push({ start: cursor + current_seg[0], end: cursor + current_seg[current_seg.length - 1] + line_length })
-        }
-        return Promise.resolve([...segs, ...segs])
-      } else {
-        return Promise.resolve([...segs, { start: cursor, end: message.length }])
+      return {
+        segments: [
+          ...state.segments,
+          ...splitRange(message, state.cursor, match.start),
+          match,
+        ],
+        cursor: match.end,
       }
-    }
-  }
+    },
+    { segments: [], cursor: 0 },
+  )
 
-  return Promise.resolve(segs)
+  return Promise.resolve(
+    [...result.segments, ...splitRange(message, result.cursor, message.length)]
+      .map((segment) => trimSegment(message, segment))
+      .filter((segment) => segment.start < segment.end && message.slice(segment.start, segment.end).trim().length > 0),
+  )
 }

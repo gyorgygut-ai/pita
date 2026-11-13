@@ -1,14 +1,13 @@
 import { cp, mkdir, readFile, rename, rm, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import packageJson from "../package.json" with { type: "json" }
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 
 const runtimeDependencies = {
-  "@opencode/plugin": "2.0.23",
-  "@opentui/core": "0.5.14",
-  "@opentui/solid": "0.5.14",
-  "solid-js": "^1.9.0",
+  ...packageJson.dependencies,
+  ...packageJson.peerDependencies,
 }
 
 const packageManifest = {
