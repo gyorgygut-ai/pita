@@ -16,7 +16,7 @@ npm run verify
 
 ## OpenCode plugin
 
-The `regex` strategy is the default; `apfel` uses the external `apfel` command. The shortcut and strategy are plugin options (`keybind` and `strategy`).
+The `regex` strategy segments visible message content into sentences and structural units. The shortcut and strategy are plugin options (`keybind` and `strategy`).
 
 ```sh
 npm run bundle:local

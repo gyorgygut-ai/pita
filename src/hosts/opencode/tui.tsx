@@ -1,11 +1,13 @@
-import { Show, createSignal, onMount } from "solid-js"
-import type { TextareaRenderable } from "@opentui/core"
+import { Show, createSignal, onCleanup, onMount } from "solid-js"
+import type { KeyEvent, TextareaRenderable } from "@opentui/core"
+import { useKeyboard, useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
 import { Plugin, usePlugin } from "@opencode/plugin/tui"
 import type { ResolvedTheme } from "@opencode/theme/tui"
-import { apfel } from "./apfel.js"
 import { createPitaController } from "../../core/controller.js"
 import type { PitaController } from "../../core/controller.js"
+import { createSelectionInput } from "../../core/selection-input.js"
+import type { SelectionInput } from "../../core/selection-input.js"
 import { parseOptions } from "../../config/options.js"
 import { PitaShell } from "../../ui/screens.js"
 import { resolveStrategy } from "../../strategies/index.js"
@@ -30,7 +32,6 @@ const opencodePitaTheme = (theme: ResolvedTheme, mode: "dark" | "light"): PitaTh
   pitaTheme({
     accent: theme.hue.accent[200],
     primary: theme.hue.interactive[200],
-    onAccent: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
     onPrimary: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
     text: theme.text.base,
     muted: theme.text.muted,
@@ -65,9 +66,21 @@ export type PitaReply = (props: PitaReplyProps) => JSX.Element
 
 export const PitaReply: PitaReply = (props) => {
   const context = usePlugin()
+  const renderer = useRenderer()
   const theme = () => opencodePitaTheme(context.theme, context.themeMode)
   const [controller, setController] = createSignal<PitaController>()
+  let selectionInput: SelectionInput | undefined
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
+
+  const handleKey: (key: KeyEvent) => void = (key) => {
+    selectionInput?.handleKey(key)
+  }
+  useKeyboard(handleKey, { release: true })
+
+  onMount(() => {
+    renderer.enableKittyKeyboard(7)
+    onCleanup(() => renderer.enableKittyKeyboard(5))
+  })
 
   const attachEditor = (node: TextareaRenderable) => setEditor(node)
 
@@ -95,27 +108,6 @@ export const PitaReply: PitaReply = (props) => {
   context.keymap.layer(() => ({
     commands: [
       {
-        id: "pita.segment.next",
-        title: "Pita: highlight next segment",
-        bind: "down",
-        enabled: () => controller()?.screen() === "select",
-        run: () => controller()?.next(),
-      },
-      {
-        id: "pita.segment.previous",
-        title: "Pita: highlight previous segment",
-        bind: "up",
-        enabled: () => controller()?.screen() === "select",
-        run: () => controller()?.prev(),
-      },
-      {
-        id: "pita.segment.toggle",
-        title: "Pita: toggle highlighted segment",
-        bind: "space",
-        enabled: () => controller()?.screen() === "select",
-        run: () => controller()?.toggle(),
-      },
-      {
         id: "pita.accept",
         title: "Pita: compose reply or send it",
         bind: "return",
@@ -129,9 +121,6 @@ export const PitaReply: PitaReply = (props) => {
       },
     ],
     bindings: [
-      "pita.segment.next",
-      "pita.segment.previous",
-      "pita.segment.toggle",
       "pita.accept",
       "pita.back",
     ],
@@ -140,14 +129,14 @@ export const PitaReply: PitaReply = (props) => {
   const load = async (): Promise<void> => {
     await context.data.session.message.sync(props.sessionID)
     const message = lastAssistantText(context, props.sessionID)
-    setController(
-      createPitaController({
+    const current = createPitaController({
         message,
         segments: await props.strategy(message),
         close,
         submit,
       })
-    )
+    selectionInput = createSelectionInput(current)
+    setController(current)
   }
 
   onMount(() => {
@@ -165,7 +154,7 @@ export default Plugin.define({
   id: "pita",
   setup: (context) => {
     const { strategy, keybind } = parseOptions(context.options)
-    const run = resolveStrategy(strategy, { runApfel: apfel })
+    const run = resolveStrategy(strategy)
 
     const unregister = context.ui.router.register({
       name: pitaPageName,

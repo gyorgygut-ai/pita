@@ -14,10 +14,10 @@ const build = (close: () => void, submit: SubmissionStrategy) =>
   createPitaController({ message, segments, close, submit })
 
 describe("createPitaController", () => {
-  it("starts on the selection screen with nothing highlighted", () => {
+  it("starts on the selection screen with the first segment highlighted", () => {
     const controller = build(vi.fn(), vi.fn())
     expect(controller.screen()).toBe("select")
-    expect(controller.highlight()).toBe(-1)
+    expect(controller.highlight()).toBe(0)
     expect(controller.selected()).toEqual([])
   })
 
@@ -29,13 +29,29 @@ describe("createPitaController", () => {
     expect(controller.highlight()).toBe(0)
   })
 
+  it("keeps the highlight unset when there are no segments", () => {
+    const controller = createPitaController({ message: "", segments: [], close: () => {}, submit: () => {} })
+    controller.next(); controller.prev()
+    expect(controller.highlight()).toBe(-1)
+  })
+
   it("toggles the highlighted segment on and off", () => {
     const controller = build(vi.fn(), vi.fn())
-    controller.next()
     controller.toggle()
     expect(controller.selected()).toEqual([0])
     controller.toggle()
     expect(controller.selected()).toEqual([])
+  })
+
+  it("adds the highlighted segment without removing an existing selection", () => {
+    const controller = build(vi.fn(), vi.fn())
+    controller.next()
+    controller.toggle()
+    controller.next()
+    controller.selectHighlighted()
+    controller.prev()
+    controller.selectHighlighted()
+    expect(controller.selected()).toEqual([1, 2])
   })
 
   it("fills the reply with the quoted selection and opens composition", () => {
@@ -45,6 +61,12 @@ describe("createPitaController", () => {
     controller.compose()
     expect(controller.screen()).toBe("compose")
     expect(controller.reply()).toBe('"Three."')
+  })
+
+  it("opens composition when selection is accepted", () => {
+    const controller = build(vi.fn(), vi.fn())
+    controller.toggle(); controller.compose()
+    expect([controller.screen(), controller.reply()]).toEqual(["compose", '"One."'])
   })
 
   it("replaces the composed reply", () => {

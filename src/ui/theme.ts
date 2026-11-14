@@ -7,8 +7,12 @@ export type PitaStyle = {
   readonly foreground: RGBA
 }
 
+export type PitaHighlightStyle = {
+  readonly foreground: RGBA
+}
+
 export type PitaTheme = {
-  readonly highlighted: PitaStyle
+  readonly highlighted: PitaHighlightStyle
   readonly selected: PitaStyle
   readonly transparent: RGBA
   readonly text: RGBA
@@ -19,7 +23,6 @@ export type PitaTheme = {
 export type PitaPalette = {
   readonly accent: RGBA
   readonly primary: RGBA
-  readonly onAccent: RGBA
   readonly onPrimary: RGBA
   readonly text: RGBA
   readonly muted: RGBA
@@ -29,7 +32,7 @@ export type PitaPalette = {
 export type ResolvePitaTheme = (palette: PitaPalette) => PitaTheme
 
 export const pitaTheme: ResolvePitaTheme = (palette) => ({
-  highlighted: { background: palette.accent, foreground: palette.onAccent },
+  highlighted: { foreground: palette.accent },
   selected: { background: palette.primary, foreground: palette.onPrimary },
   transparent,
   text: palette.text,

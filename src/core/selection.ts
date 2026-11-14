@@ -1,33 +1,26 @@
-export type NextIndex = (current: number, count: number) => number
-export type PrevIndex = (current: number, count: number) => number
-export type ToggleSelected = (selected: readonly number[], index: number) => readonly number[]
-export type IsSelected = (selected: readonly number[], index: number) => boolean
-
-export const nextIndex: NextIndex = (current, count) => {
-  if (count === 0) {
+export const nextIndex = (current: number, count: number): number => {
+  if (count <= 0) {
     return -1
   }
-  if (current < 0) {
-    return 0
-  }
-  return (current + 1) % count
+  return current < 0 ? 0 : (current + 1) % count
 }
 
-export const prevIndex: PrevIndex = (current, count) => {
-  if (count === 0) {
+export const prevIndex = (current: number, count: number): number => {
+  if (count <= 0) {
     return -1
   }
-  if (current < 0) {
-    return count - 1
-  }
-  return (current - 1 + count) % count
+  return current < 0 ? count - 1 : (current - 1 + count) % count
 }
 
-export const toggleSelected: ToggleSelected = (selected, index) => {
-  if (selected.includes(index)) {
-    return selected.filter((value) => value !== index)
-  }
-  return [...selected, index].sort((left, right) => left - right)
-}
+export const isSelected = (selected: readonly number[], index: number): boolean =>
+  selected.includes(index)
 
-export const isSelected: IsSelected = (selected, index) => selected.includes(index)
+export const toggleSelected = (selected: readonly number[], index: number): readonly number[] =>
+  isSelected(selected, index)
+    ? selected.filter((item) => item !== index)
+    : [...selected, index].sort((left, right) => left - right)
+
+export const addSelected = (selected: readonly number[], index: number): readonly number[] =>
+  isSelected(selected, index)
+    ? selected
+    : [...selected, index].sort((left, right) => left - right)

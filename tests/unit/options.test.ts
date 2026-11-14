@@ -6,8 +6,8 @@ describe("parseOptions", () => {
     expect(parseOptions({})).toEqual({ strategy: "regex", keybind: "<leader>p" })
   })
 
-  it("accepts the apfel strategy", () => {
-    expect(parseOptions({ strategy: "apfel" })).toEqual({ strategy: "apfel", keybind: "<leader>p" })
+  it("rejects the removed apfel strategy", () => {
+    expect(() => parseOptions({ strategy: "apfel" })).toThrow('unknown strategy: "apfel"')
   })
 
   it("accepts a configured keybind", () => {

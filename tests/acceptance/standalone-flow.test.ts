@@ -23,6 +23,7 @@ const mount = (props: HarnessProps): Promise<TestRendererSetup> =>
   testRender(() => createComponent(StandaloneApp, { message, segments, ...props }), {
     width: 40,
     height: 14,
+    kittyKeyboard: true,
   })
 
 const settle = async (setup: TestRendererSetup): Promise<void> => {
@@ -44,7 +45,7 @@ const span = (setup: TestRendererSetup, text: string) =>
 const anchor = (setup: TestRendererSetup, text: string): number =>
   lines(setup).findIndex((line) => line === text)
 
-type InputAction = "down" | "up" | "space" | "enter" | "escape"
+type InputAction = "down" | "up" | "space" | "space-down" | "space-release" | "enter" | "escape"
 
 const act = async (setup: TestRendererSetup, actions: readonly InputAction[]): Promise<void> => {
   await setup.flush()
@@ -52,8 +53,11 @@ const act = async (setup: TestRendererSetup, actions: readonly InputAction[]): P
     if (action === "down" || action === "up") {
       setup.mockInput.pressArrow(action)
     }
-    if (action === "space") {
+    if (action === "space" || action === "space-down") {
       setup.mockInput.pressKey(" ")
+    }
+    if (action === "space" || action === "space-release") {
+      setup.renderer.stdin.emit("data", Buffer.from("\u001b[32;1:3u"))
     }
     if (action === "enter") {
       setup.mockInput.pressEnter()
@@ -66,7 +70,7 @@ const act = async (setup: TestRendererSetup, actions: readonly InputAction[]): P
 }
 
 const submitEditedReply = async (setup: TestRendererSetup): Promise<void> => {
-  await act(setup, ["down", "space", "enter"])
+  await act(setup, ["space", "enter"])
   await setup.mockInput.typeText("X")
   await settle(setup)
   await act(setup, ["enter"])
@@ -85,52 +89,108 @@ await describe("segment selection screen", async () => {
     setup.renderer.destroy()
   })
 
-  await it("highlights the first segment with the accent background", async () => {
+  await it("highlights the first segment with accent foreground only", async () => {
     const setup = await mount({})
-    await act(setup, ["down"])
-    assert.ok(span(setup, "Alpha.")?.bg.equals(standalonePalette.accent))
+    await settle(setup)
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.accent),
+        span(setup, "Alpha.")?.bg.equals(span(setup, "Beta.")?.bg),
+      ],
+      [true, true],
+    )
     setup.renderer.destroy()
   })
 
   await it("moves the highlight without retaining it on previously visited segments", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "down"])
-    assert.notEqual(span(setup, "Alpha.")?.bg?.equals(standalonePalette.accent), true)
-    assert.ok(span(setup, "Beta.")?.bg.equals(standalonePalette.accent))
-    assert.notEqual(span(setup, "Gamma.")?.bg?.equals(standalonePalette.accent), true)
+    await act(setup, ["down"])
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.text),
+        span(setup, "Beta.")?.fg.equals(standalonePalette.accent),
+        span(setup, "Gamma.")?.fg.equals(standalonePalette.text),
+        span(setup, "Alpha.")?.bg.equals(span(setup, "Beta.")?.bg),
+        span(setup, "Beta.")?.bg.equals(span(setup, "Gamma.")?.bg),
+      ],
+      [true, true, true, true, true],
+    )
     setup.renderer.destroy()
   })
 
   await it("marks a selected segment with the primary background", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "space", "down"])
-    assert.ok(span(setup, "Alpha.")?.bg.equals(standalonePalette.primary))
+    await act(setup, ["space", "down"])
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.onPrimary),
+      ],
+      [true, true],
+    )
     setup.renderer.destroy()
   })
 
   await it("removes selection without leaving stale highlight backgrounds", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "space", "down", "space", "up", "space"])
-    assert.ok(span(setup, "Alpha.")?.bg.equals(standalonePalette.accent))
-    assert.ok(span(setup, "Beta.")?.bg.equals(standalonePalette.primary))
-    assert.notEqual(span(setup, "Gamma.")?.bg?.equals(standalonePalette.accent), true)
+    await act(setup, ["space", "down", "space", "up", "space"])
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.accent),
+        span(setup, "Alpha.")?.bg.equals(span(setup, "Gamma.")?.bg),
+        span(setup, "Beta.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Gamma.")?.fg.equals(standalonePalette.text),
+      ],
+      [true, true, true, true],
+    )
     setup.renderer.destroy()
   })
 
-  await it("shows cursor highlight separately from another selected segment", async () => {
+  await it("applies selected background and highlighted foreground together", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "space", "down", "space", "up"])
-    assert.deepEqual([
-      span(setup, "Alpha.")?.bg.equals(standalonePalette.accent),
-      span(setup, "Beta.")?.bg.equals(standalonePalette.primary),
-    ], [true, true])
+    await act(setup, ["space"])
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.accent),
+      ],
+      [true, true],
+    )
     setup.renderer.destroy()
   })
 
-  await it("highlights the last segment on up from nothing", async () => {
+  await it("highlights the last segment on up from the first segment", async () => {
     const setup = await mount({})
     await act(setup, ["up"])
-    assert.ok(span(setup, "Gamma.")?.bg.equals(standalonePalette.accent))
+    assert.deepEqual(
+      [
+        span(setup, "Gamma.")?.fg.equals(standalonePalette.accent),
+        span(setup, "Gamma.")?.bg.equals(span(setup, "Alpha.")?.bg),
+      ],
+      [true, true],
+    )
+    setup.renderer.destroy()
+  })
+
+  await it("selects on Space press and never selects during later navigation", async () => {
+    const setup = await mount({})
+    await act(setup, ["space-down", "down", "down", "up", "up"])
+    assert.deepEqual(
+      [
+        span(setup, "Alpha.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Beta.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Gamma.")?.bg.equals(standalonePalette.primary),
+        span(setup, "Alpha.")?.fg.equals(standalonePalette.accent),
+      ],
+      [true, false, false, true],
+    )
+    setup.renderer.destroy()
+  })
+
+  await it("toggles the highlighted selection off on the next Space press", async () => {
+    const setup = await mount({})
+    await act(setup, ["space", "space"])
+    assert.equal(span(setup, "Alpha.")?.bg.equals(standalonePalette.primary), false)
     setup.renderer.destroy()
   })
 
@@ -146,7 +206,7 @@ await describe("segment selection screen", async () => {
 await describe("reply composition screen", async () => {
   await it("quotes the selected segments with two blank lines between them", async () => {
     const setup = await mount({})
-    await act(setup, ["down", "space", "down", "space", "enter"])
+    await act(setup, ["space", "down", "space", "enter"])
     const start = anchor(setup, '"Alpha."')
     assert.deepEqual(lines(setup).slice(start, start + 4), ['"Alpha."', "", "", '"Beta."'])
     assert.ok(span(setup, '"Alpha."')?.bg.equals(standalonePalette.primary))

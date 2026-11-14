@@ -44,12 +44,20 @@
 - **Acceptance**:
   - Strategy to use configurable in settings; used in UI
   - Assistant message formatting unchanged; appears with the same layout, formatting
-  - `Highlighted`: Opencode theme `accent` bg - `theme.hue.accent[200]` + fitting color
-  - `Selected`: Opencode theme `primary` bg - `theme.hue.interactive[200]` + fitting color
+  - `Highlighted`: `theme.segment.highlighted`
+  - `Selected`: `theme.segment.selected`
+  - `Highlighted & Selected`: both styles merged, highlighted priority
   - `Up` key highlights the previous / last segment
   - `Down` key highlights the next / first segment
-  - `Space` key adds current highlighted segments to selected list
-  - `Space` key on selected segment removes it from selected list
+  - `Space`
+    - adds current highlighted segment to selected list
+    - on selected segment removes it from selected list
+  - `Space + Up`
+    - highlights the previous / last segment
+    - key toggles prev / last segment in selected list
+  - `Space + Down`
+    - key highlights the next / first segment
+    - key toggles next / first segment in selected list
   - `Esc` key closes segment selection; goes back to chat
   - `Enter` key submits selection; goes to next screen
 
@@ -61,15 +69,6 @@
   - Input: message as string
   - Splits text into logical structural segments (headings, list items, blockquotes, fences, thematic breaks, paragraphs, with optional sentence splitting for long paragraphs)
   - Output: segments of { start, end } character offsets, ordered and contiguous, no gaps/overlaps by construction
-
-**2.2 Strategy: Apfel**:
-
-- **Tool**: `src/strategies/llm-apfel.ts`
-- **Acceptance**:
-  - Input: message as string
-  - Request segmenting decision from LLM 
-  - Map LLM decision to output segment list
-  - Output: segments of { start, end }
 
 **3. Reply Composition**:
 

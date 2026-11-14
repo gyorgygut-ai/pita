@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/core/selection"
+import { addSelected, isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/core/selection"
 import { readFixture } from "../read-fixture"
 
 type IndexCase = { current: number; count: number; expected: number }
@@ -32,6 +32,12 @@ describe("toggleSelected", () => {
     for (const testCase of cases.toggle) {
       expect(toggleSelected(testCase.selected, testCase.index)).toEqual(testCase.expected)
     }
+  })
+})
+
+describe("addSelected", () => {
+  it("adds the index without removing an existing selection", () => {
+    expect(addSelected([0, 2], 2)).toEqual([0, 2])
   })
 })
 

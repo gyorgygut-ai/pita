@@ -1,5 +1,6 @@
 import { For, createEffect, createMemo, createSignal } from "solid-js"
 import { SyntaxStyle } from "@opentui/core"
+import type { NativeResourceOwner } from "@opentui/core"
 import type { RGBA, TextareaRenderable } from "@opentui/core"
 import { useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
@@ -14,29 +15,20 @@ export type SelectScreenProps = {
   readonly theme: () => PitaTheme
 }
 
-const runBackground = (
+export type SegmentRunStyle = { readonly fg: RGBA; readonly bg: RGBA }
+
+export const resolveSegmentStyle = (
   theme: PitaTheme,
   selected: boolean,
-  highlighted: boolean
-): RGBA => {
-  if (highlighted) {
-    return theme.highlighted.background
-  }
-  if (selected) {
-    return theme.selected.background
-  }
-  return theme.transparent
-}
-
-const runForeground = (theme: PitaTheme, selected: boolean, highlighted: boolean): RGBA => {
-  if (highlighted) {
-    return theme.highlighted.foreground
-  }
-  if (selected) {
-    return theme.selected.foreground
-  }
-  return theme.text
-}
+  highlighted: boolean,
+): SegmentRunStyle => ({
+  fg: highlighted
+    ? theme.highlighted.foreground
+    : selected
+      ? theme.selected.foreground
+      : theme.text,
+  bg: selected ? theme.selected.background : theme.transparent,
+})
 
 export type SelectScreen = (props: SelectScreenProps) => JSX.Element
 
@@ -58,15 +50,10 @@ export const SelectScreen: SelectScreen = (props) => {
                 run.segment !== null && isSelected(props.controller.selected(), run.segment)
               const highlighted = (): boolean =>
                 run.segment !== null && props.controller.highlight() === run.segment
+              const style = (): SegmentRunStyle =>
+                resolveSegmentStyle(props.theme(), selected(), highlighted())
               return (
-                <span
-                  style={{
-                    fg: runForeground(props.theme(), selected(), highlighted()),
-                    bg: runBackground(props.theme(), selected(), highlighted()),
-                  }}
-                >
-                  {run.text}
-                </span>
+                <span style={style()}>{run.text}</span>
               )
             }}
           </For>
@@ -90,14 +77,21 @@ type SelectedStyle = {
 
 type SyntaxStyles = Record<string, { readonly fg?: RGBA; readonly bg?: RGBA }>
 type SyntaxStyleRenderer = {
-  readonly nativeScene?: { readonly resourceContext?: unknown }
+  readonly nativeScene?: { readonly resourceContext?: NativeResourceOwner }
 }
-type SyntaxStyleFactory = (styles: SyntaxStyles, resourceContext?: unknown) => SyntaxStyle
+type SyntaxStyleFactory = (styles: SyntaxStyles, resourceContext?: NativeResourceOwner) => SyntaxStyle
+
+const syntaxStyleFactory: SyntaxStyleFactory = (styles, resourceContext) => {
+  if (resourceContext === undefined) {
+    throw new Error("Syntax styles require a native resource context")
+  }
+  return SyntaxStyle.fromStyles(styles, resourceContext)
+}
 
 export const createSelectedSyntaxStyle = (
   renderer: SyntaxStyleRenderer,
   styles: SyntaxStyles,
-  factory: SyntaxStyleFactory = SyntaxStyle.fromStyles as unknown as SyntaxStyleFactory,
+  factory: SyntaxStyleFactory = syntaxStyleFactory,
 ): SyntaxStyle => {
   const resourceContext = renderer.nativeScene?.resourceContext
   return resourceContext === undefined ? factory(styles) : factory(styles, resourceContext)

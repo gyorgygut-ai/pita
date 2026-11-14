@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js"
 import { composeReply } from "./compose.js"
-import { nextIndex, prevIndex, toggleSelected } from "./selection.js"
+import { addSelected, nextIndex, prevIndex, toggleSelected } from "./selection.js"
 import type { Segment } from "./segment.js"
 import type { SubmissionStrategy } from "../strategies/submission.js"
 
@@ -23,6 +23,7 @@ export type PitaController = {
   next: () => void
   prev: () => void
   toggle: () => void
+  selectHighlighted: () => void
   compose: () => void
   setReply: (text: string) => void
   submit: (text: string) => void
@@ -31,7 +32,7 @@ export type PitaController = {
 
 export const createPitaController = (deps: PitaControllerDeps): PitaController => {
   const [screen, setScreen] = createSignal<PitaScreen>("select")
-  const [highlight, setHighlight] = createSignal(-1)
+  const [highlight, setHighlight] = createSignal(deps.segments.length === 0 ? -1 : 0)
   const [selected, setSelected] = createSignal<readonly number[]>([])
   const [reply, setReply] = createSignal("")
 
@@ -46,6 +47,12 @@ export const createPitaController = (deps: PitaControllerDeps): PitaController =
   const toggle = (): void => {
     if (highlight() >= 0) {
       setSelected(toggleSelected(selected(), highlight()))
+    }
+  }
+
+  const selectHighlighted = (): void => {
+    if (highlight() >= 0) {
+      setSelected(addSelected(selected(), highlight()))
     }
   }
 
@@ -76,6 +83,7 @@ export const createPitaController = (deps: PitaControllerDeps): PitaController =
     next,
     prev,
     toggle,
+    selectHighlighted,
     compose,
     setReply,
     submit,
