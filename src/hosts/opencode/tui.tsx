@@ -24,9 +24,22 @@ type OpenCodePrompt = (
 
 export const createOpenCodeSubmissionStrategy = (
   sessionID: string,
-  prompt: OpenCodePrompt
+  prompt: OpenCodePrompt,
+  onSubmitted: () => void,
 ): SubmissionStrategy =>
-  (text) => prompt({ sessionID, text })
+  async (text) => {
+    await prompt({ sessionID, text })
+    onSubmitted()
+  }
+
+export const createOpenCodeReturnToChat = (
+  navigateToSession: () => void,
+  dispatch: (commandID: string) => void,
+): (() => void) =>
+  () => {
+    navigateToSession()
+    dispatch("session.last")
+  }
 
 const opencodePitaTheme = (theme: ResolvedTheme, mode: "dark" | "light"): PitaTheme =>
   pitaTheme({
@@ -75,10 +88,10 @@ export const PitaReply: PitaReply = (props) => {
   const handleKey: (key: KeyEvent) => void = (key) => {
     selectionInput?.handleKey(key)
   }
-  useKeyboard(handleKey, { release: true })
+  useKeyboard(handleKey)
 
   onMount(() => {
-    renderer.enableKittyKeyboard(7)
+    renderer.enableKittyKeyboard(5)
     onCleanup(() => renderer.enableKittyKeyboard(5))
   })
 
@@ -88,9 +101,15 @@ export const PitaReply: PitaReply = (props) => {
     context.ui.router.navigate({ type: "session", sessionID: props.sessionID })
   }
 
+  const returnToChat = createOpenCodeReturnToChat(
+    close,
+    (commandID) => context.keymap.dispatch(commandID),
+  )
+
   const submit = createOpenCodeSubmissionStrategy(
     props.sessionID,
-    (input) => context.client.session.prompt(input)
+    (input) => context.client.session.prompt(input),
+    returnToChat,
   )
 
   const accept = (): void => {
@@ -106,6 +125,8 @@ export const PitaReply: PitaReply = (props) => {
   }
 
   context.keymap.layer(() => ({
+    mode: "global",
+    priority: 100,
     commands: [
       {
         id: "pita.accept",

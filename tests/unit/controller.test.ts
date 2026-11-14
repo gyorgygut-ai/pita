@@ -43,15 +43,9 @@ describe("createPitaController", () => {
     expect(controller.selected()).toEqual([])
   })
 
-  it("adds the highlighted segment without removing an existing selection", () => {
+  it("exposes only the toggle operation for selecting segments", () => {
     const controller = build(vi.fn(), vi.fn())
-    controller.next()
-    controller.toggle()
-    controller.next()
-    controller.selectHighlighted()
-    controller.prev()
-    controller.selectHighlighted()
-    expect(controller.selected()).toEqual([1, 2])
+    expect("selectHighlighted" in controller).toBe(false)
   })
 
   it("fills the reply with the quoted selection and opens composition", () => {
@@ -60,13 +54,13 @@ describe("createPitaController", () => {
     controller.toggle()
     controller.compose()
     expect(controller.screen()).toBe("compose")
-    expect(controller.reply()).toBe('"Three."')
+    expect(controller.reply()).toBe('"Three."\n\n\n')
   })
 
   it("opens composition when selection is accepted", () => {
     const controller = build(vi.fn(), vi.fn())
     controller.toggle(); controller.compose()
-    expect([controller.screen(), controller.reply()]).toEqual(["compose", '"One."'])
+    expect([controller.screen(), controller.reply()]).toEqual(["compose", '"One."\n\n\n'])
   })
 
   it("replaces the composed reply", () => {

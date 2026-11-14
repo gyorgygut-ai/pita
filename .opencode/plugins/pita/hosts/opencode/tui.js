@@ -1,21 +1,28 @@
 import { createComponent as _$createComponent } from "@opentui/solid";
-import { Show, createSignal, onMount } from "solid-js";
+import { Show, createSignal, onCleanup, onMount } from "solid-js";
+import { useKeyboard, useRenderer } from "@opentui/solid";
 import { Plugin, usePlugin } from "@opencode/plugin/tui";
-import { apfel } from "./apfel.js";
 import { createPitaController } from "../../core/controller.js";
+import { createSelectionInput } from "../../core/selection-input.js";
 import { parseOptions } from "../../config/options.js";
 import { PitaShell } from "../../ui/screens.js";
 import { resolveStrategy } from "../../strategies/index.js";
 import { pitaTheme } from "../../ui/theme.js";
 export const pitaPageName = "pita.reply";
-export const createOpenCodeSubmissionStrategy = (sessionID, prompt) => text => prompt({
-  sessionID,
-  text
-});
+export const createOpenCodeSubmissionStrategy = (sessionID, prompt, onSubmitted) => async text => {
+  await prompt({
+    sessionID,
+    text
+  });
+  onSubmitted();
+};
+export const createOpenCodeReturnToChat = (navigateToSession, dispatch) => () => {
+  navigateToSession();
+  dispatch("session.last");
+};
 const opencodePitaTheme = (theme, mode) => pitaTheme({
   accent: theme.hue.accent[200],
   primary: theme.hue.interactive[200],
-  onAccent: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
   onPrimary: mode === "dark" ? theme.hue.neutral[100] : theme.hue.neutral[900],
   text: theme.text.base,
   muted: theme.text.muted,
@@ -32,9 +39,19 @@ export const lastAssistantText = (context, sessionID) => {
 };
 export const PitaReply = props => {
   const context = usePlugin();
+  const renderer = useRenderer();
   const theme = () => opencodePitaTheme(context.theme, context.themeMode);
   const [controller, setController] = createSignal();
+  let selectionInput;
   const [editor, setEditor] = createSignal(undefined);
+  const handleKey = key => {
+    selectionInput?.handleKey(key);
+  };
+  useKeyboard(handleKey);
+  onMount(() => {
+    renderer.enableKittyKeyboard(5);
+    onCleanup(() => renderer.enableKittyKeyboard(5));
+  });
   const attachEditor = node => setEditor(node);
   const close = () => {
     context.ui.router.navigate({
@@ -42,7 +59,8 @@ export const PitaReply = props => {
       sessionID: props.sessionID
     });
   };
-  const submit = createOpenCodeSubmissionStrategy(props.sessionID, input => context.client.session.prompt(input));
+  const returnToChat = createOpenCodeReturnToChat(close, commandID => context.keymap.dispatch(commandID));
+  const submit = createOpenCodeSubmissionStrategy(props.sessionID, input => context.client.session.prompt(input), returnToChat);
   const accept = () => {
     const current = controller();
     if (current === undefined) {
@@ -55,25 +73,9 @@ export const PitaReply = props => {
     current.submit(editor()?.plainText ?? current.reply());
   };
   context.keymap.layer(() => ({
+    mode: "global",
+    priority: 100,
     commands: [{
-      id: "pita.segment.next",
-      title: "Pita: highlight next segment",
-      bind: "down",
-      enabled: () => controller()?.screen() === "select",
-      run: () => controller()?.next()
-    }, {
-      id: "pita.segment.previous",
-      title: "Pita: highlight previous segment",
-      bind: "up",
-      enabled: () => controller()?.screen() === "select",
-      run: () => controller()?.prev()
-    }, {
-      id: "pita.segment.toggle",
-      title: "Pita: toggle highlighted segment",
-      bind: "space",
-      enabled: () => controller()?.screen() === "select",
-      run: () => controller()?.toggle()
-    }, {
       id: "pita.accept",
       title: "Pita: compose reply or send it",
       bind: "return",
@@ -84,17 +86,19 @@ export const PitaReply = props => {
       bind: "escape",
       run: () => controller()?.back()
     }],
-    bindings: ["pita.segment.next", "pita.segment.previous", "pita.segment.toggle", "pita.accept", "pita.back"]
+    bindings: ["pita.accept", "pita.back"]
   }));
   const load = async () => {
     await context.data.session.message.sync(props.sessionID);
     const message = lastAssistantText(context, props.sessionID);
-    setController(createPitaController({
+    const current = createPitaController({
       message,
       segments: await props.strategy(message),
       close,
       submit
-    }));
+    });
+    selectionInput = createSelectionInput(current);
+    setController(current);
   };
   onMount(() => {
     void load();
@@ -119,9 +123,7 @@ export default Plugin.define({
       strategy,
       keybind
     } = parseOptions(context.options);
-    const run = resolveStrategy(strategy, {
-      runApfel: apfel
-    });
+    const run = resolveStrategy(strategy);
     const unregister = context.ui.router.register({
       name: pitaPageName,
       render: ({

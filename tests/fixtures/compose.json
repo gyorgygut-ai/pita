@@ -6,5 +6,6 @@
     { "start": 10, "end": 16 }
   ],
   "selected": [0, 2],
-  "expected": "\"One.\"\n\n\n\"Three.\""
+  "expected": "\"One.\"\n\n\n\"Three.\"\n\n\n",
+  "expectedSingle": "\"Two.\"\n\n\n"
 }

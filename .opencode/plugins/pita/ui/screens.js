@@ -13,24 +13,10 @@ import { useRenderer } from "@opentui/solid";
 import { quotedRanges } from "../core/compose.js";
 import { layoutRuns } from "../core/layout.js";
 import { isSelected } from "../core/selection.js";
-const runBackground = (theme, selected, highlighted) => {
-  if (selected) {
-    return theme.selected.background;
-  }
-  if (highlighted) {
-    return theme.highlighted.background;
-  }
-  return theme.transparent;
-};
-const runForeground = (theme, selected, highlighted) => {
-  if (selected) {
-    return theme.selected.foreground;
-  }
-  if (highlighted) {
-    return theme.highlighted.foreground;
-  }
-  return theme.text;
-};
+export const resolveSegmentStyle = (theme, selected, highlighted) => ({
+  fg: highlighted ? theme.highlighted.foreground : selected ? theme.selected.foreground : theme.text,
+  bg: selected ? theme.selected.background : theme.transparent
+});
 export const SelectScreen = props => {
   const runs = createMemo(() => layoutRuns(props.controller.message(), props.controller.segments()));
   return (() => {
@@ -58,13 +44,11 @@ export const SelectScreen = props => {
       children: run => {
         const selected = () => run.segment !== null && isSelected(props.controller.selected(), run.segment);
         const highlighted = () => run.segment !== null && props.controller.highlight() === run.segment;
+        const style = () => resolveSegmentStyle(props.theme(), selected(), highlighted());
         return (() => {
           var _el$7 = _$createElement("span");
           _$insert(_el$7, () => run.text);
-          _$effect(_$p => _$setProp(_el$7, "style", {
-            fg: runForeground(props.theme(), selected(), highlighted()),
-            bg: runBackground(props.theme(), selected(), highlighted())
-          }, _$p));
+          _$effect(_$p => _$setProp(_el$7, "style", style(), _$p));
           return _el$7;
         })();
       }
@@ -73,6 +57,8 @@ export const SelectScreen = props => {
     return _el$;
   })();
 };
+const syntaxStyleFactory = (styles, owner) => SyntaxStyle.fromStyles(styles, owner);
+export const createSelectedSyntaxStyle = (renderer, styles, factory = syntaxStyleFactory) => factory(styles, renderer.nativeScene);
 export const ComposeScreen = props => {
   const renderer = useRenderer();
   const [node, setNode] = createSignal();
@@ -85,12 +71,13 @@ export const ComposeScreen = props => {
     }
     let entry = selectedStyle();
     if (entry === undefined) {
-      const style = SyntaxStyle.fromStyles({
+      const selectedStyles = {
         "pita-selected": {
           fg: props.theme().selected.foreground,
           bg: props.theme().selected.background
         }
-      }, renderer.nativeScene.resourceContext);
+      };
+      const style = createSelectedSyntaxStyle(renderer, selectedStyles);
       const id = style.resolveStyleId("pita-selected");
       if (id === null) {
         return;
@@ -123,7 +110,15 @@ export const ComposeScreen = props => {
       props.editor(value);
     }, _el$1);
     _$setProp(_el$1, "focused", true);
+    _$setProp(_el$1, "keyBindings", [{
+      name: "return",
+      action: "submit"
+    }, {
+      name: "kpenter",
+      action: "submit"
+    }]);
     _$setProp(_el$1, "onContentChange", () => props.controller.setReply(node()?.plainText ?? ""));
+    _$setProp(_el$1, "onSubmit", () => props.controller.submit(node()?.plainText ?? props.controller.reply()));
     _$effect(_p$ => {
       var _v$ = props.theme().muted,
         _v$2 = props.controller.reply();

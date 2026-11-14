@@ -2,8 +2,7 @@ import { RGBA } from "@opentui/core";
 const transparent = RGBA.fromInts(0, 0, 0, 0);
 export const pitaTheme = palette => ({
   highlighted: {
-    background: palette.accent,
-    foreground: palette.onAccent
+    foreground: palette.accent
   },
   selected: {
     background: palette.primary,

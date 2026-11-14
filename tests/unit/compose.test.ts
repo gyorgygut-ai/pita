@@ -8,6 +8,7 @@ const fixture: {
   segments: readonly Segment[]
   selected: readonly number[]
   expected: string
+  expectedSingle: string
 } = JSON.parse(readFixture("compose.json"))
 
 describe("composeReply", () => {
@@ -15,8 +16,8 @@ describe("composeReply", () => {
     expect(composeReply(fixture.message, fixture.segments, fixture.selected)).toBe(fixture.expected)
   })
 
-  it("quotes a single selected segment", () => {
-    expect(composeReply(fixture.message, fixture.segments, [1])).toBe('"Two."')
+  it("leaves two blank lines after a single selected segment", () => {
+    expect(composeReply(fixture.message, fixture.segments, [1])).toBe(fixture.expectedSingle)
   })
 
   it("returns an empty reply when no segment is selected", () => {

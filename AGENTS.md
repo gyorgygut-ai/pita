@@ -52,23 +52,17 @@
   - `Space`
     - adds current highlighted segment to selected list
     - on selected segment removes it from selected list
-  - `Space + Up`
-    - highlights the previous / last segment
-    - key toggles prev / last segment in selected list
-  - `Space + Down`
-    - key highlights the next / first segment
-    - key toggles next / first segment in selected list
   - `Esc` key closes segment selection; goes back to chat
   - `Enter` key submits selection; goes to next screen
 
 **2.1 Strategy: Regex**:
 
-- **Tool**: `src/strategies/regex.ts`
+- **Approach**: Split text to logical structural segments (headings, sentences, list items, blockquotes)
 - **Acceptance**:
-  - Default setting
-  - Input: message as string
-  - Splits text into logical structural segments (headings, list items, blockquotes, fences, thematic breaks, paragraphs, with optional sentence splitting for long paragraphs)
-  - Output: segments of { start, end } character offsets, ordered and contiguous, no gaps/overlaps by construction
+  - is default setting
+  - `src/strategies/regex.ts` exists
+  - `input`: message string
+  - `output`: segments of { start, end } unique character offsets, ordered
 
 **3. Reply Composition**:
 
@@ -77,10 +71,10 @@
 - **Outcome**: The response to the segments can be freely edited
 - **Acceptance**:
   - Segments use same `Selected` style, but in quotation marks
-  - There are two blank lines between each displayed segment
+  - There are two blank lines after each displayed segment
   - The entire content is editable, including the segments
   - `Esc` key closes reply composition; goes back to selection
-  - `Enter` key submits the composition; copies response to chat box
+  - `Enter` key submits composition + displays chat
 
 ---
 

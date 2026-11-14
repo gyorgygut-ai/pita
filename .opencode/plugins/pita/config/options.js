@@ -1,7 +1,6 @@
 const defaultKeybind = "<leader>p";
 const isStrategyName = value => {
   switch (value) {
-    case "apfel":
     case "regex":
       return true;
     default:

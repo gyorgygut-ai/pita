@@ -33,16 +33,6 @@ describe("createSelectionInput", () => {
     expect(controller.selected()).toEqual([0])
   })
 
-  it("does not change selection when navigating after Space without a release event", () => {
-    const controller = createController()
-    const input = createSelectionInput(controller)
-    input.handleKey(key("space"))
-    input.handleKey(key("down"))
-    input.handleKey(key("up"))
-    input.handleKey(key("down"))
-    expect([controller.highlight(), controller.selected()]).toEqual([1, [0]])
-  })
-
   it("ignores repeated Space key events", () => {
     const controller = createController()
     const input = createSelectionInput(controller)
@@ -51,7 +41,7 @@ describe("createSelectionInput", () => {
     expect(controller.selected()).toEqual([0])
   })
 
-  it("moves without toggling when arrow keys arrive before Space release", () => {
+  it("moves with arrows without toggling their destinations", () => {
     const controller = createController()
     const input = createSelectionInput(controller)
     input.handleKey(key("space"))
@@ -68,14 +58,6 @@ describe("createSelectionInput", () => {
     expect(controller.selected()).toEqual([1])
   })
 
-  it("does not toggle a second time on Space release", () => {
-    const controller = createController()
-    const input = createSelectionInput(controller)
-    input.handleKey(key("space"))
-    input.handleKey(key("space", "release"))
-    expect(controller.selected()).toEqual([0])
-  })
-
   it("toggles an already-selected segment off on Space press", () => {
     const { controller, input } = createInputWithSelectedMiddleSegment()
     controller.prev()
@@ -83,29 +65,4 @@ describe("createSelectionInput", () => {
     expect(controller.selected()).toEqual([])
   })
 
-  it("does not change selection on release outside selection", () => {
-    const controller = createController()
-    const input = createSelectionInput(controller)
-    input.handleKey(key("space"))
-    controller.compose()
-    input.handleKey(key("space", "release"))
-    expect(controller.selected()).toEqual([0])
-  })
-
-  it("wraps Up from the first segment without changing selection", () => {
-    const controller = createController()
-    const input = createSelectionInput(controller)
-    input.handleKey(key("space"))
-    input.handleKey(key("up"))
-    expect([controller.highlight(), controller.selected()]).toEqual([2, [0]])
-  })
-
-  it("does not change selection on navigation after a delivered Space release", () => {
-    const controller = createController()
-    const input = createSelectionInput(controller)
-    input.handleKey(key("space"))
-    input.handleKey(key("space", "release"))
-    input.handleKey(key("down"))
-    expect([controller.highlight(), controller.selected()]).toEqual([1, [0]])
-  })
 })

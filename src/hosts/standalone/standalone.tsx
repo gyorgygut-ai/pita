@@ -38,7 +38,7 @@ export type StandaloneApp = (props: StandaloneAppProps) => JSX.Element
 export const StandaloneApp: StandaloneApp = (props) => {
   const renderer = useRenderer()
   onMount(() => {
-    renderer.enableKittyKeyboard(7)
+    renderer.enableKittyKeyboard(5)
     onCleanup(() => renderer.enableKittyKeyboard(5))
   })
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
@@ -72,7 +72,7 @@ export const StandaloneApp: StandaloneApp = (props) => {
       key.preventDefault()
       controller.back()
     }
-  }, { release: true })
+  })
 
   const theme = () => pitaTheme(standalonePalette)
 

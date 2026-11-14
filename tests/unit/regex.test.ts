@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest"
 import { regexStrategy } from "../../src/strategies/regex"
 
 describe("regexStrategy", () => {
+  it("separates an emoji heading from following prose", async () => {
+    const segments = await regexStrategy("📋 TL;DR\nYou've got options.")
+    expect(segments.map(({ start, end }) => [start, end])).toEqual([[0, 8], [9, 28]])
+  })
+
+  it("returns ordered contiguous ranges across paragraph whitespace", async () => {
+    const segments = await regexStrategy("First.\n\nSecond.")
+    expect(segments).toEqual([{ start: 0, end: 8 }, { start: 8, end: 15 }])
+  })
+
   it("segments every prose sentence regardless of paragraph length and skips blank lines", async () => {
     const message = "Short. Still short.\n\nA longer sentence continues past the former size cutoff by repeating meaningful words many times and remains one complete sentence without a period until here. Next sentence."
     const segments = await regexStrategy(message)

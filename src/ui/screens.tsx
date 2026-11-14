@@ -77,25 +77,17 @@ type SelectedStyle = {
 
 type SyntaxStyles = Record<string, { readonly fg?: RGBA; readonly bg?: RGBA }>
 type SyntaxStyleRenderer = {
-  readonly nativeScene?: { readonly resourceContext?: NativeResourceOwner }
+  readonly nativeScene: NativeResourceOwner
 }
-type SyntaxStyleFactory = (styles: SyntaxStyles, resourceContext?: NativeResourceOwner) => SyntaxStyle
+type SyntaxStyleFactory = (styles: SyntaxStyles, owner: NativeResourceOwner) => SyntaxStyle
 
-const syntaxStyleFactory: SyntaxStyleFactory = (styles, resourceContext) => {
-  if (resourceContext === undefined) {
-    throw new Error("Syntax styles require a native resource context")
-  }
-  return SyntaxStyle.fromStyles(styles, resourceContext)
-}
+const syntaxStyleFactory: SyntaxStyleFactory = (styles, owner) => SyntaxStyle.fromStyles(styles, owner)
 
 export const createSelectedSyntaxStyle = (
   renderer: SyntaxStyleRenderer,
   styles: SyntaxStyles,
   factory: SyntaxStyleFactory = syntaxStyleFactory,
-): SyntaxStyle => {
-  const resourceContext = renderer.nativeScene?.resourceContext
-  return resourceContext === undefined ? factory(styles) : factory(styles, resourceContext)
-}
+): SyntaxStyle => factory(styles, renderer.nativeScene)
 
 export const ComposeScreen: ComposeScreen = (props) => {
   const renderer = useRenderer()
@@ -140,8 +132,13 @@ export const ComposeScreen: ComposeScreen = (props) => {
           props.editor(value)
         }}
         focused
+        keyBindings={[
+          { name: "return", action: "submit" },
+          { name: "kpenter", action: "submit" },
+        ]}
         initialValue={props.controller.reply()}
         onContentChange={() => props.controller.setReply(node()?.plainText ?? "")}
+        onSubmit={() => props.controller.submit(node()?.plainText ?? props.controller.reply())}
       />
     </box>
   )

@@ -1,10 +1,11 @@
 import { createComponent as _$createComponent } from "@opentui/solid";
-import { Show, createSignal } from "solid-js";
+import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import { RGBA } from "@opentui/core";
 import { render, useKeyboard, useRenderer } from "@opentui/solid";
 import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 import { createPitaController } from "../../core/controller.js";
+import { createSelectionInput } from "../../core/selection-input.js";
 import { PitaFrame, PitaShell, ReplyResultScreen } from "../../ui/screens.js";
 import { regexStrategy } from "../../strategies/index.js";
 import { pitaTheme } from "../../ui/theme.js";
@@ -12,7 +13,6 @@ export const standaloneMessage = readFileSync(new URL("../../../tests/fixtures/s
 export const standalonePalette = {
   accent: RGBA.fromInts(59, 130, 246),
   primary: RGBA.fromInts(37, 99, 235),
-  onAccent: RGBA.fromInts(11, 11, 11),
   onPrimary: RGBA.fromInts(255, 255, 255),
   text: RGBA.fromInts(229, 229, 229),
   muted: RGBA.fromInts(163, 163, 163),
@@ -20,6 +20,10 @@ export const standalonePalette = {
 };
 export const StandaloneApp = props => {
   const renderer = useRenderer();
+  onMount(() => {
+    renderer.enableKittyKeyboard(5);
+    onCleanup(() => renderer.enableKittyKeyboard(5));
+  });
   const [editor, setEditor] = createSignal(undefined);
   const [submitted, setSubmitted] = createSignal();
   const controller = createPitaController({
@@ -35,22 +39,9 @@ export const StandaloneApp = props => {
       });
     }
   });
+  const selectionInput = createSelectionInput(controller);
   useKeyboard(key => {
-    if (key.name === "down" && controller.screen() === "select") {
-      key.preventDefault();
-      controller.next();
-      return;
-    }
-    if (key.name === "up" && controller.screen() === "select") {
-      key.preventDefault();
-      controller.prev();
-      return;
-    }
-    if (key.name === "space" && controller.screen() === "select") {
-      key.preventDefault();
-      controller.toggle();
-      return;
-    }
+    selectionInput.handleKey(key);
     if (key.name === "return") {
       key.preventDefault();
       if (controller.screen() === "select") {

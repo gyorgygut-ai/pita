@@ -6,6 +6,7 @@ import { testRender } from "@opentui/solid"
 import type { TestRendererSetup } from "@opentui/core/testing"
 import type { Segment } from "../../src/core/segment.js"
 import { StandaloneApp, standaloneMessage, standalonePalette } from "../../dist/hosts/standalone/standalone.js"
+import { regexStrategy } from "../../dist/strategies/regex.js"
 
 const message = "Alpha.\n\nBeta.\nGamma."
 const fixture = readFileSync(new URL("../fixtures/standalone-message.txt", import.meta.url), "utf8")
@@ -17,14 +18,19 @@ const segments: readonly Segment[] = [
 
 type HarnessProps = {
   readonly onClose?: () => void
+  readonly message?: string
+  readonly segments?: readonly Segment[]
 }
 
-const mount = (props: HarnessProps): Promise<TestRendererSetup> =>
-  testRender(() => createComponent(StandaloneApp, { message, segments, ...props }), {
+const mount = ({ message: text = message, segments: ranges = segments, ...props }: HarnessProps): Promise<TestRendererSetup> =>
+  testRender(() => createComponent(StandaloneApp, { message: text, segments: ranges, ...props }), {
     width: 40,
     height: 14,
     kittyKeyboard: true,
   })
+
+const mountFixture = async (): Promise<TestRendererSetup> =>
+  mount({ message: fixture, segments: await regexStrategy(fixture) })
 
 const settle = async (setup: TestRendererSetup): Promise<void> => {
   setup.renderer.requestRender()
@@ -42,10 +48,18 @@ const lines = (setup: TestRendererSetup): string[] =>
 const span = (setup: TestRendererSetup, text: string) =>
   setup.captureSpans().lines.flatMap((line) => line.spans).find((item) => item.text.includes(text))
 
+const fixtureStyleState = (setup: TestRendererSetup): readonly [boolean, number] => {
+  const spans = setup.captureSpans().lines.flatMap((line) => line.spans)
+  return [
+    spans.some((item) => item.bg.equals(standalonePalette.primary)),
+    spans.filter((item) => item.fg.equals(standalonePalette.accent)).length,
+  ]
+}
+
 const anchor = (setup: TestRendererSetup, text: string): number =>
   lines(setup).findIndex((line) => line === text)
 
-type InputAction = "down" | "up" | "space" | "space-down" | "space-release" | "enter" | "escape"
+type InputAction = "down" | "up" | "space" | "enter" | "escape"
 
 const act = async (setup: TestRendererSetup, actions: readonly InputAction[]): Promise<void> => {
   await setup.flush()
@@ -53,11 +67,8 @@ const act = async (setup: TestRendererSetup, actions: readonly InputAction[]): P
     if (action === "down" || action === "up") {
       setup.mockInput.pressArrow(action)
     }
-    if (action === "space" || action === "space-down") {
+    if (action === "space") {
       setup.mockInput.pressKey(" ")
-    }
-    if (action === "space" || action === "space-release") {
-      setup.renderer.stdin.emit("data", Buffer.from("\u001b[32;1:3u"))
     }
     if (action === "enter") {
       setup.mockInput.pressEnter()
@@ -77,8 +88,11 @@ const submitEditedReply = async (setup: TestRendererSetup): Promise<void> => {
 }
 
 await describe("segment selection screen", async () => {
-  await it("uses the shared standalone fixture", () => {
-    assert.equal(standaloneMessage, fixture)
+  await it("renders the full standalone fixture without broad selected styling", async () => {
+    const setup = await mountFixture()
+    await settle(setup)
+    assert.deepEqual([standaloneMessage === fixture, ...fixtureStyleState(setup)], [true, false, 1])
+    setup.renderer.destroy()
   })
 
   await it("keeps the message layout and blank lines", async () => {
@@ -172,9 +186,9 @@ await describe("segment selection screen", async () => {
     setup.renderer.destroy()
   })
 
-  await it("selects on Space press and never selects during later navigation", async () => {
+  await it("selects on Space and leaves later arrow navigation unselected", async () => {
     const setup = await mount({})
-    await act(setup, ["space-down", "down", "down", "up", "up"])
+    await act(setup, ["space", "down", "down", "up", "up"])
     assert.deepEqual(
       [
         span(setup, "Alpha.")?.bg.equals(standalonePalette.primary),
@@ -210,6 +224,8 @@ await describe("reply composition screen", async () => {
     const start = anchor(setup, '"Alpha."')
     assert.deepEqual(lines(setup).slice(start, start + 4), ['"Alpha."', "", "", '"Beta."'])
     assert.ok(span(setup, '"Alpha."')?.bg.equals(standalonePalette.primary))
+    const afterLastQuote = anchor(setup, '"Beta."') + 1
+    assert.deepEqual(lines(setup).slice(afterLastQuote, afterLastQuote + 2), ["", ""])
     setup.renderer.destroy()
   })
 
@@ -226,6 +242,17 @@ await describe("reply composition screen", async () => {
     const setup = await mount({})
     await act(setup, ["enter", "escape"])
     assert.ok(setup.captureCharFrame().includes("Up and Down highlight"))
+    setup.renderer.destroy()
+  })
+
+  await it("inserts literal spaces in the editor and keeps Space working after returning", async () => {
+    const setup = await mount({})
+    await act(setup, ["space", "enter"])
+    await setup.mockInput.typeText("hello world")
+    await settle(setup)
+    assert.ok(setup.captureCharFrame().includes("hello world"))
+    await act(setup, ["escape", "space"])
+    assert.equal(span(setup, "Alpha.")?.bg.equals(standalonePalette.primary), false)
     setup.renderer.destroy()
   })
 })

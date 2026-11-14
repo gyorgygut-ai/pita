@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { addSelected, isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/core/selection"
+import * as selection from "../../src/core/selection"
+import { isSelected, nextIndex, prevIndex, toggleSelected } from "../../src/core/selection"
 import { readFixture } from "../read-fixture"
 
 type IndexCase = { current: number; count: number; expected: number }
@@ -35,9 +36,9 @@ describe("toggleSelected", () => {
   })
 })
 
-describe("addSelected", () => {
-  it("adds the index without removing an existing selection", () => {
-    expect(addSelected([0, 2], 2)).toEqual([0, 2])
+describe("selection exports", () => {
+  it("exposes no one-way selection operation", () => {
+    expect("addSelected" in selection).toBe(false)
   })
 })
 

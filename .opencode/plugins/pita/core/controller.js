@@ -3,7 +3,7 @@ import { composeReply } from "./compose.js";
 import { nextIndex, prevIndex, toggleSelected } from "./selection.js";
 export const createPitaController = deps => {
   const [screen, setScreen] = createSignal("select");
-  const [highlight, setHighlight] = createSignal(-1);
+  const [highlight, setHighlight] = createSignal(deps.segments.length === 0 ? -1 : 0);
   const [selected, setSelected] = createSignal([]);
   const [reply, setReply] = createSignal("");
   const next = () => {

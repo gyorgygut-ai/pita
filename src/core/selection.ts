@@ -19,8 +19,3 @@ export const toggleSelected = (selected: readonly number[], index: number): read
   isSelected(selected, index)
     ? selected.filter((item) => item !== index)
     : [...selected, index].sort((left, right) => left - right)
-
-export const addSelected = (selected: readonly number[], index: number): readonly number[] =>
-  isSelected(selected, index)
-    ? selected
-    : [...selected, index].sort((left, right) => left - right)

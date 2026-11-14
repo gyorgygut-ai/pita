@@ -1,6 +1,6 @@
 export const composeReply = (message, segments, selected) => {
   const quoted = selected.map(index => `"${message.slice(segments[index].start, segments[index].end)}"`);
-  return quoted.join("\n\n\n");
+  return quoted.length === 0 ? "" : `${quoted.join("\n\n\n")}\n\n\n`;
 };
 export const quotedRanges = reply => {
   const ranges = [];

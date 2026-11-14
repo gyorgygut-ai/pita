@@ -94,6 +94,9 @@ const splitList = (message: string, lines: readonly Line[]): Segment[] => {
   return segments
 }
 
+const isHeadingLine = (text: string): boolean =>
+  /^ {0,3}#{1,6}(?:\s|$)/.test(text) || /^\p{Extended_Pictographic}/u.test(text)
+
 const segmentBlock = (message: string, block: Segment): Segment[] => {
   const text = message.slice(block.start, block.end)
   const lines = linesIn(message, block.start, block.end)
@@ -101,18 +104,28 @@ const segmentBlock = (message: string, block: Segment): Segment[] => {
   if (/^ {0,3}(?:```|~~~)/.test(text) || /^ {0,3}>/.test(text)) {
     return [trimSegment(message, block)]
   }
-  if (/^ {0,3}#{1,6}(?:\s|$)/.test(text)) {
-    const heading = lines[0]
-    if (heading === undefined) {
-      return []
+  if (lines.some((line) => isHeadingLine(message.slice(line.start, line.end)))) {
+    const segments: Segment[] = []
+    let proseStart: number | undefined
+    let proseEnd: number | undefined
+    const finishProse = (): void => {
+      if (proseStart !== undefined && proseEnd !== undefined) {
+        segments.push(...segmentBlock(message, { start: proseStart, end: proseEnd }))
+        proseStart = undefined
+        proseEnd = undefined
+      }
     }
-    const remainingStart = heading.end + 1
-    return remainingStart >= block.end
-      ? [trimSegment(message, heading)]
-      : [
-          trimSegment(message, heading),
-          ...segmentBlock(message, { start: remainingStart, end: block.end }),
-        ]
+    for (const line of lines) {
+      if (isHeadingLine(message.slice(line.start, line.end))) {
+        finishProse()
+        segments.push(trimSegment(message, line))
+      } else {
+        proseStart ??= line.start
+        proseEnd = line.end
+      }
+    }
+    finishProse()
+    return segments
   }
   if (/^ {0,3}(?:[-*_][ \t]*){3,}$/.test(text)) {
     return [trimSegment(message, block)]
