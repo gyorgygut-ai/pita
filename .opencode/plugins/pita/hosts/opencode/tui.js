@@ -1,9 +1,8 @@
 import { createComponent as _$createComponent } from "@opentui/solid";
 import { Show, createSignal, onCleanup, onMount } from "solid-js";
-import { useKeyboard, useRenderer } from "@opentui/solid";
+import { useRenderer } from "@opentui/solid";
 import { Plugin, usePlugin } from "@opencode/plugin/tui";
 import { createPitaController } from "../../core/controller.js";
-import { createSelectionInput } from "../../core/selection-input.js";
 import { parseOptions } from "../../config/options.js";
 import { PitaShell } from "../../ui/screens.js";
 import { resolveStrategy } from "../../strategies/index.js";
@@ -42,12 +41,7 @@ export const PitaReply = props => {
   const renderer = useRenderer();
   const theme = () => opencodePitaTheme(context.theme, context.themeMode);
   const [controller, setController] = createSignal();
-  let selectionInput;
   const [editor, setEditor] = createSignal(undefined);
-  const handleKey = key => {
-    selectionInput?.handleKey(key);
-  };
-  useKeyboard(handleKey);
   onMount(() => {
     renderer.enableKittyKeyboard(5);
     onCleanup(() => renderer.enableKittyKeyboard(5));
@@ -97,7 +91,6 @@ export const PitaReply = props => {
       close,
       submit
     });
-    selectionInput = createSelectionInput(current);
     setController(current);
   };
   onMount(() => {

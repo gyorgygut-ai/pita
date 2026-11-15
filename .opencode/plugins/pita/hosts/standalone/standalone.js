@@ -5,7 +5,6 @@ import { render, useKeyboard, useRenderer } from "@opentui/solid";
 import { pathToFileURL } from "node:url";
 import { readFileSync } from "node:fs";
 import { createPitaController } from "../../core/controller.js";
-import { createSelectionInput } from "../../core/selection-input.js";
 import { PitaFrame, PitaShell, ReplyResultScreen } from "../../ui/screens.js";
 import { regexStrategy } from "../../strategies/index.js";
 import { pitaTheme } from "../../ui/theme.js";
@@ -39,9 +38,7 @@ export const StandaloneApp = props => {
       });
     }
   });
-  const selectionInput = createSelectionInput(controller);
   useKeyboard(key => {
-    selectionInput.handleKey(key);
     if (key.name === "return") {
       key.preventDefault();
       if (controller.screen() === "select") {

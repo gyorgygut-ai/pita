@@ -2,11 +2,12 @@ import { For, createEffect, createMemo, createSignal } from "solid-js"
 import { SyntaxStyle } from "@opentui/core"
 import type { NativeResourceOwner } from "@opentui/core"
 import type { RGBA, TextareaRenderable } from "@opentui/core"
-import { useRenderer } from "@opentui/solid"
+import { useKeyboard, useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
 import { quotedRanges } from "../core/compose.js"
 import type { PitaController } from "../core/controller.js"
 import { layoutRuns } from "../core/layout.js"
+import { createSelectionInput } from "../core/selection-input.js"
 import { isSelected } from "../core/selection.js"
 import type { PitaTheme } from "./theme.js"
 
@@ -34,6 +35,8 @@ export type SelectScreen = (props: SelectScreenProps) => JSX.Element
 
 export const SelectScreen: SelectScreen = (props) => {
   const runs = createMemo(() => layoutRuns(props.controller.message(), props.controller.segments()))
+  const input = createSelectionInput(props.controller)
+  useKeyboard((key) => input.handleKey(key))
 
   return (
     <box flexDirection="column" flexGrow={1}>

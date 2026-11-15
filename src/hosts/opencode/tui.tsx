@@ -1,13 +1,11 @@
 import { Show, createSignal, onCleanup, onMount } from "solid-js"
-import type { KeyEvent, TextareaRenderable } from "@opentui/core"
-import { useKeyboard, useRenderer } from "@opentui/solid"
+import type { TextareaRenderable } from "@opentui/core"
+import { useRenderer } from "@opentui/solid"
 import type { JSX } from "@opentui/solid"
 import { Plugin, usePlugin } from "@opencode/plugin/tui"
 import type { ResolvedTheme } from "@opencode/theme/tui"
 import { createPitaController } from "../../core/controller.js"
 import type { PitaController } from "../../core/controller.js"
-import { createSelectionInput } from "../../core/selection-input.js"
-import type { SelectionInput } from "../../core/selection-input.js"
 import { parseOptions } from "../../config/options.js"
 import { PitaShell } from "../../ui/screens.js"
 import { resolveStrategy } from "../../strategies/index.js"
@@ -82,13 +80,7 @@ export const PitaReply: PitaReply = (props) => {
   const renderer = useRenderer()
   const theme = () => opencodePitaTheme(context.theme, context.themeMode)
   const [controller, setController] = createSignal<PitaController>()
-  let selectionInput: SelectionInput | undefined
   const [editor, setEditor] = createSignal<TextareaRenderable | undefined>(undefined)
-
-  const handleKey: (key: KeyEvent) => void = (key) => {
-    selectionInput?.handleKey(key)
-  }
-  useKeyboard(handleKey)
 
   onMount(() => {
     renderer.enableKittyKeyboard(5)
@@ -156,7 +148,6 @@ export const PitaReply: PitaReply = (props) => {
         close,
         submit,
       })
-    selectionInput = createSelectionInput(current)
     setController(current)
   }
 

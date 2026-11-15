@@ -9,9 +9,10 @@ import { setProp as _$setProp } from "@opentui/solid";
 import { createElement as _$createElement } from "@opentui/solid";
 import { For, createEffect, createMemo, createSignal } from "solid-js";
 import { SyntaxStyle } from "@opentui/core";
-import { useRenderer } from "@opentui/solid";
+import { useKeyboard, useRenderer } from "@opentui/solid";
 import { quotedRanges } from "../core/compose.js";
 import { layoutRuns } from "../core/layout.js";
+import { createSelectionInput } from "../core/selection-input.js";
 import { isSelected } from "../core/selection.js";
 export const resolveSegmentStyle = (theme, selected, highlighted) => ({
   fg: highlighted ? theme.highlighted.foreground : selected ? theme.selected.foreground : theme.text,
@@ -19,6 +20,8 @@ export const resolveSegmentStyle = (theme, selected, highlighted) => ({
 });
 export const SelectScreen = props => {
   const runs = createMemo(() => layoutRuns(props.controller.message(), props.controller.segments()));
+  const input = createSelectionInput(props.controller);
+  useKeyboard(key => input.handleKey(key));
   return (() => {
     var _el$ = _$createElement("box"),
       _el$2 = _$createElement("box"),

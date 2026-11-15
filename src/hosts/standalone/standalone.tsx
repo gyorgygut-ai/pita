@@ -6,7 +6,6 @@ import type { JSX } from "@opentui/solid"
 import { pathToFileURL } from "node:url"
 import { readFileSync } from "node:fs"
 import { createPitaController } from "../../core/controller.js"
-import { createSelectionInput } from "../../core/selection-input.js"
 import { PitaFrame, PitaShell, ReplyResultScreen } from "../../ui/screens.js"
 import type { Segment } from "../../core/segment.js"
 import { regexStrategy } from "../../strategies/index.js"
@@ -55,10 +54,7 @@ export const StandaloneApp: StandaloneApp = (props) => {
       setSubmitted({ text })
     },
   })
-  const selectionInput = createSelectionInput(controller)
-
   useKeyboard((key) => {
-    selectionInput.handleKey(key)
     if (key.name === "return") {
       key.preventDefault()
       if (controller.screen() === "select") {

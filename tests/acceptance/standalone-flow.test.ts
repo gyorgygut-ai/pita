@@ -218,6 +218,16 @@ await describe("segment selection screen", async () => {
 })
 
 await describe("reply composition screen", async () => {
+  await it("unsubscribes the selection key handler when composition opens", async () => {
+    const setup = await mount({})
+    await settle(setup)
+    const listenersBeforeCompose = setup.renderer.keyInput.listenerCount("keypress")
+    await act(setup, ["enter"])
+    const listenersInCompose = setup.renderer.keyInput.listenerCount("keypress")
+    assert.equal(listenersInCompose, listenersBeforeCompose - 1)
+    setup.renderer.destroy()
+  })
+
   await it("quotes the selected segments with two blank lines between them", async () => {
     const setup = await mount({})
     await act(setup, ["space", "down", "space", "enter"])
@@ -248,7 +258,9 @@ await describe("reply composition screen", async () => {
   await it("inserts literal spaces in the editor and keeps Space working after returning", async () => {
     const setup = await mount({})
     await act(setup, ["space", "enter"])
-    await setup.mockInput.typeText("hello world")
+    await setup.mockInput.typeText("hello")
+    setup.mockInput.pressKey(" ")
+    await setup.mockInput.typeText("world")
     await settle(setup)
     assert.ok(setup.captureCharFrame().includes("hello world"))
     await act(setup, ["escape", "space"])
