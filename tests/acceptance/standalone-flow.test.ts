@@ -218,13 +218,13 @@ await describe("segment selection screen", async () => {
 })
 
 await describe("reply composition screen", async () => {
-  await it("unsubscribes the selection key handler when composition opens", async () => {
+  await it("replaces the selection key handler with the composition handler", async () => {
     const setup = await mount({})
     await settle(setup)
     const listenersBeforeCompose = setup.renderer.keyInput.listenerCount("keypress")
     await act(setup, ["enter"])
     const listenersInCompose = setup.renderer.keyInput.listenerCount("keypress")
-    assert.equal(listenersInCompose, listenersBeforeCompose - 1)
+    assert.equal(listenersInCompose, listenersBeforeCompose)
     setup.renderer.destroy()
   })
 

@@ -97,6 +97,14 @@ export const ComposeScreen: ComposeScreen = (props) => {
   const [node, setNode] = createSignal<TextareaRenderable>()
   const [selectedStyle, setSelectedStyle] = createSignal<SelectedStyle>()
 
+  useKeyboard((key) => {
+    if (key.name !== "space" || key.ctrl || key.meta || key.super || key.hyper) {
+      return
+    }
+    key.preventDefault()
+    node()?.insertText(" ")
+  })
+
   createEffect(() => {
     const editor = node()
     const reply = props.controller.reply()

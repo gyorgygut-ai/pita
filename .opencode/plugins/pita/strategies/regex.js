@@ -7,23 +7,9 @@ const trimSegment = (message, segment) => {
     end: segment.end - trailing
   };
 };
-const linesIn = (message, start, end) => {
-  const lines = [];
-  let cursor = start;
-  while (cursor < end) {
-    const newline = message.indexOf("\n", cursor);
-    const lineEnd = newline === -1 || newline >= end ? end : newline;
-    lines.push({
-      start: cursor,
-      end: lineEnd
-    });
-    cursor = lineEnd + 1;
-  }
-  return lines;
-};
 const splitSentences = (message, block) => {
   const text = message.slice(block.start, block.end);
-  const result = [];
+  const segments = [];
   let start = block.start;
   for (const boundary of text.matchAll(/(?<=[.!?])(?=\s+)/g)) {
     const relative = boundary.index;
@@ -36,7 +22,7 @@ const splitSentences = (message, block) => {
       end
     });
     if (sentence.start < sentence.end) {
-      result.push(sentence);
+      segments.push(sentence);
     }
     start = end;
     while (start < block.end && /\s/.test(message[start] ?? "")) {
@@ -48,131 +34,32 @@ const splitSentences = (message, block) => {
     end: block.end
   });
   if (final.start < final.end) {
-    result.push(final);
+    segments.push(final);
   }
-  return result;
-};
-const splitList = (message, lines) => {
-  const segments = [];
-  let itemStart;
-  let itemEnd;
-  let proseStart;
-  let proseEnd;
-  const finishItem = () => {
-    if (itemStart !== undefined && itemEnd !== undefined) {
-      segments.push(trimSegment(message, {
-        start: itemStart,
-        end: itemEnd
-      }));
-      itemStart = undefined;
-      itemEnd = undefined;
-    }
-  };
-  const finishProse = () => {
-    if (proseStart !== undefined && proseEnd !== undefined) {
-      segments.push(...splitSentences(message, {
-        start: proseStart,
-        end: proseEnd
-      }));
-      proseStart = undefined;
-      proseEnd = undefined;
-    }
-  };
-  for (const line of lines) {
-    const text = message.slice(line.start, line.end);
-    const isItem = /^ {0,3}(?:[-*+]|\d+[.)])[ \t]+/.test(text);
-    if (isItem) {
-      finishProse();
-      finishItem();
-      itemStart = line.start;
-      itemEnd = line.end;
-    } else if (itemStart !== undefined && /^ {2,}\S/.test(text)) {
-      itemEnd = line.end;
-    } else {
-      finishItem();
-      proseStart ??= line.start;
-      proseEnd = line.end;
-    }
-  }
-  finishItem();
-  finishProse();
   return segments;
-};
-const isHeadingLine = text => /^ {0,3}#{1,6}(?:\s|$)/.test(text) || /^\p{Extended_Pictographic}/u.test(text);
-const segmentBlock = (message, block) => {
-  const text = message.slice(block.start, block.end);
-  const lines = linesIn(message, block.start, block.end);
-  if (/^ {0,3}(?:```|~~~)/.test(text) || /^ {0,3}>/.test(text)) {
-    return [trimSegment(message, block)];
-  }
-  if (lines.some(line => isHeadingLine(message.slice(line.start, line.end)))) {
-    const segments = [];
-    let proseStart;
-    let proseEnd;
-    const finishProse = () => {
-      if (proseStart !== undefined && proseEnd !== undefined) {
-        segments.push(...segmentBlock(message, {
-          start: proseStart,
-          end: proseEnd
-        }));
-        proseStart = undefined;
-        proseEnd = undefined;
-      }
-    };
-    for (const line of lines) {
-      if (isHeadingLine(message.slice(line.start, line.end))) {
-        finishProse();
-        segments.push(trimSegment(message, line));
-      } else {
-        proseStart ??= line.start;
-        proseEnd = line.end;
-      }
-    }
-    finishProse();
-    return segments;
-  }
-  if (/^ {0,3}(?:[-*_][ \t]*){3,}$/.test(text)) {
-    return [trimSegment(message, block)];
-  }
-  if (lines.some(line => /^ {0,3}(?:[-*+]|\d+[.)])[ \t]+/.test(message.slice(line.start, line.end)))) {
-    return splitList(message, lines);
-  }
-  return splitSentences(message, block);
 };
 export const regexStrategy = message => {
   const segments = [];
-  let blockStart;
-  let blockEnd;
+  const structure = /^ {0,3}(?:#{1,6}[ \t]+[^\n]*|(?:[-*+]|\d+[.)])[ \t]+[^\n]*|>[^\n]*|(?:[-*_][ \t]*){3,}|\p{Extended_Pictographic}[^\n]*)$/gmu;
   let cursor = 0;
-  while (cursor <= message.length) {
-    const newline = message.indexOf("\n", cursor);
-    const lineEnd = newline === -1 ? message.length : newline;
-    const line = message.slice(cursor, lineEnd);
-    const blank = line.trim().length === 0;
-    if (blank) {
-      if (blockStart !== undefined && blockEnd !== undefined) {
-        const block = {
-          start: blockStart,
-          end: blockEnd
-        };
-        segments.push(...segmentBlock(message, block));
-      }
-      blockStart = undefined;
-      blockEnd = undefined;
-    } else {
-      blockStart ??= cursor;
-      blockEnd = lineEnd;
-    }
-    if (newline === -1) {
-      break;
-    }
-    cursor = newline + 1;
-  }
-  if (blockStart !== undefined && blockEnd !== undefined) {
-    segments.push(...segmentBlock(message, {
-      start: blockStart,
-      end: blockEnd
+  for (const match of message.matchAll(structure)) {
+    const start = match.index ?? 0;
+    segments.push(...splitSentences(message, {
+      start: cursor,
+      end: start
     }));
+    const segment = trimSegment(message, {
+      start,
+      end: start + match[0].length
+    });
+    if (segment.start < segment.end) {
+      segments.push(segment);
+    }
+    cursor = start + match[0].length;
   }
-  return Promise.resolve(segments.filter(segment => segment.start < segment.end));
+  segments.push(...splitSentences(message, {
+    start: cursor,
+    end: message.length
+  }));
+  return Promise.resolve(segments);
 };

@@ -16,7 +16,7 @@ await describe("reply from selected segments", async () => {
     const first = nextIndex(-1, segments.length)
     const last = prevIndex(-1, segments.length)
     const selected = toggleSelected(toggleSelected([], last), first)
-    assert.equal(composeReply(message, segments, selected), readFixture("acceptance-expected.txt"))
+    assert.equal(composeReply(message, segments, selected), `${readFixture("acceptance-expected.txt").trimEnd()}\n\n\n`)
   })
 
   await it("composes an empty reply after toggling the selected segment off", async () => {

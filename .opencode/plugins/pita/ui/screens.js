@@ -66,6 +66,13 @@ export const ComposeScreen = props => {
   const renderer = useRenderer();
   const [node, setNode] = createSignal();
   const [selectedStyle, setSelectedStyle] = createSignal();
+  useKeyboard(key => {
+    if (key.name !== "space" || key.ctrl || key.meta || key.super || key.hyper) {
+      return;
+    }
+    key.preventDefault();
+    node()?.insertText(" ");
+  });
   createEffect(() => {
     const editor = node();
     const reply = props.controller.reply();

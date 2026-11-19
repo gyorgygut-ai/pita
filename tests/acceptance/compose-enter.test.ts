@@ -38,6 +38,43 @@ await describe("composition Enter submission", async () => {
     }
   })
 
+  await it("inserts Space even when an earlier host keyboard handler prevents its default", async () => {
+    const controller = createPitaController({
+      message: "Alpha.",
+      segments: [{ start: 0, end: 6 }],
+      close: () => {},
+      submit: () => {},
+    })
+    controller.toggle()
+    controller.compose()
+    const color = RGBA.fromInts(255, 255, 255)
+    const theme = () => ({
+      muted: color,
+      selected: { foreground: color, background: color },
+    })
+    const setup = await testRender(
+      () => createComponent(ComposeScreen, { controller, theme, editor: () => {} }),
+      { width: 40, height: 10, kittyKeyboard: true },
+    )
+    const hostKeyHandler = (key: { readonly name: string; preventDefault: () => void }): void => {
+      if (key.name === "space") {
+        key.preventDefault()
+      }
+    }
+
+    try {
+      await setup.flush()
+      setup.renderer.keyInput.prependListener("keypress", hostKeyHandler)
+      await setup.mockInput.typeText("hello")
+      setup.mockInput.pressKey(" ")
+      await setup.mockInput.typeText("world")
+      await setup.flush()
+      assert.ok(controller.reply().includes("hello world"))
+    } finally {
+      setup.renderer.destroy()
+    }
+  })
+
   await it("submits the edited textarea content when Enter is pressed", async () => {
     const submitted: string[] = []
     const controller = createPitaController({
